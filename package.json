@@ -5,6 +5,8 @@
   "scripts": {
     "build": "del-cli build && webpack",
     "build-prod": "del-cli build && webpack --mode=production",
+    "build:docs": "del-cli docs && webpack --env docs=true",
+    "build-prod:docs": "del-cli docs && webpack --mode=production --env docs=true",
     "start": "node scripts/host.js",
     "test": "del-cli build && webpack && node scripts/host.js"
   },

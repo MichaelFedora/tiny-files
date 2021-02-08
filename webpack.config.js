@@ -10,7 +10,8 @@ const TerserJsPlugin = require('terser-webpack-plugin')
 module.exports = (env, argv) => {
 
   const production = (env && env.production) || (argv && argv.mode == 'production') ? true : false;
-  console.log('Environment:', (production ? 'Production' : 'Development') + '!')
+  const docs = env && env.docs;
+  console.log('Environment:', (production ? 'Production' : 'Development') + (docs ? ' (docs)' : '') + '!')
 return {
   mode: production ? 'production' : 'development',
   entry: {
@@ -18,7 +19,7 @@ return {
   },
 
   output: {
-    path: path.resolve(__dirname, production ? 'dist' : 'build'),
+    path: path.resolve(__dirname, docs ? 'docs' : production ? 'dist' : 'build'),
     publicPath: '',
     filename: '[name].[contenthash].js',
   },
