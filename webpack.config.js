@@ -5,12 +5,13 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const TsConfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const TerserJsPlugin = require('terser-webpack-plugin')
+const TerserJsPlugin = require('terser-webpack-plugin');
 
 module.exports = (env, argv) => {
 
   const production = (env && env.production) || (argv && argv.mode == 'production') ? true : false;
   const docs = env && env.docs;
+  const docsUrl = '';
   console.log('Environment:', (production ? 'Production' : 'Development') + (docs ? ' (docs)' : '') + '!')
 return {
   mode: production ? 'production' : 'development',
@@ -20,7 +21,7 @@ return {
 
   output: {
     path: path.resolve(__dirname, docs ? 'docs' : production ? 'dist' : 'build'),
-    publicPath: '',
+    publicPath: docs  ? docsUrl : '',
     filename: '[name].[contenthash].js',
   },
 
@@ -85,7 +86,8 @@ return {
     new HtmlWebpackPlugin({
       chunks: ['tiny-files'],
       template: 'src/index.html',
-      filename: 'index.html'
+      filename: 'index.html',
+      base: docs ? docsUrl : '/'
     })
   ]
 }
