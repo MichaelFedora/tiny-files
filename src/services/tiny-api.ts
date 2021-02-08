@@ -14,10 +14,11 @@ class TinyApi {
         username = spleet[0];
       }
 
-      dataBus.homeUrl = location.protocol + '//' + origin;
+      const protocol = /^localhost:/.test(origin) ? 'http:' : location.protocol;
+      dataBus.homeUrl = protocol + '//' + origin;
       dataBus.storeScopes = personal ? [dataBus.privateScope, dataBus.publicScope] : ['/']
 
-      location.href = location.protocol + '//' + origin + '/auth/handshake/start'
+      location.href = dataBus.homeUrl + '/auth/handshake/start'
         + '?app=tiny-files'
         + '&redirect=' + location.origin + '/login'
         + '&scopes=home,store,db'
