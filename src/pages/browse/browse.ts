@@ -2,7 +2,7 @@ import { ModalProgrammatic } from 'buefy';
 import { debounce, DebouncedFunc, throttle } from 'lodash';
 import dataBus from 'services/data-bus';
 import tinyApi from 'services/tiny-api';
-import { PathedFileInfo } from 'types';
+import { FileListAdvance, PathedFileInfo } from 'types';
 import Vue from 'vue';
 
 import UploadModal from 'components/upload/upload';
@@ -53,7 +53,19 @@ export default Vue.component('tiny-browse', {
       if(this.working) return;
       this.working = true;
 
-      const entries = await Promise.all(dataBus.storeScopes.map(scope => tinyApi.files.listFiles(scope, true).then(res => res.entries)))
+      // assume one page for now, but will have to fix that later
+      const listFilesLoop = async (scope: string) => {
+        const ret: FileListAdvance['entries'] = { };
+        let page = undefined;
+        do {
+          const res = await tinyApi.files.listFiles(scope, true, page);
+          for(const e in res.entries)
+            ret[scope + e] = res.entries[e];
+          page = res.page || undefined;
+        } while(page);
+        return ret;
+      }
+      const entries = await Promise.all(dataBus.storeScopes.map(listFilesLoop))
         .then(res => res.reduce((acc, c) => Object.assign(acc, c)));
       const bigList = Object.keys(entries);
 
@@ -64,7 +76,7 @@ export default Vue.component('tiny-browse', {
 
       if(this.familiarLayout && this.personal) {
         const privateScope = dataBus.privateScope, publicScope = dataBus.publicScope;
-        pathData = pathData.filter(a => !a.path.startsWith(privateScope + '/public'));
+        pathData = pathData.filter(a => !a.path.startsWith(privateScope + '/public') && !a.path.startsWith(publicScope + '/shares'));
         for(const entry of pathData) {
           if(entry.path.startsWith(privateScope))
             entry.path = entry.path.slice(privateScope.length);

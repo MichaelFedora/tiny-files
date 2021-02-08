@@ -121,9 +121,10 @@ class TinyApi {
         .catch(e => { handleError(e); throw e; });
     },
 
-    async listFiles<T extends boolean = false>(path: string, advance?: T): Promise<T extends false ? FileList : FileListAdvance> {
+    async listFiles<T extends boolean = false>(path: string, advance?: T, page?: number): Promise<T extends false ? FileList : FileListAdvance> {
       return axios.get(`${dataBus.storeUrl}/list-files${path.length > 0 && !path.startsWith('/') ? '/' : ''}${path}`
-        + `?sid=${dataBus.storeToken}${advance ? '&advance=true' : ''}`)
+        + `?sid=${dataBus.storeToken}${advance ? '&advance=true' : ''}`
+        + (page ? '&page=' + page : ''))
         .then(res => res.data)
         .catch(e => { handleError(e); throw e; });
     },
