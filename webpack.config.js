@@ -6,6 +6,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const TsConfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const TerserJsPlugin = require('terser-webpack-plugin');
+const { DefinePlugin } = require('webpack');
 
 module.exports = (env, argv) => {
 
@@ -77,6 +78,10 @@ return {
   },
 
   plugins: [
+    new DefinePlugin({
+      'production': Boolean(production),
+      'docs': Boolean(docs)
+    }),
     new CleanWebpackPlugin(),
     new VueLoaderPlugin(),
     new ForkTsCheckWebpackPlugin(),

@@ -11,8 +11,10 @@ import dataBus from './services/data-bus';
 
 Vue.use(VueRouter);
 
+declare const docs: boolean;
+
 const router = new VueRouter({
-  mode: process.env?.docs ? 'hash' : 'history',
+  mode: docs ? 'hash' : 'history',
   routes: [
     { path: '/', redirect: '/browse', name: 'home' }, // no idea
     { path: '/browse**', component: BrowsePage, name: 'browse' }, // own files
