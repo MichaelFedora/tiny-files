@@ -2,15 +2,6 @@
 <div id='tiny-browse' :class='{ blur: dragging }'
     @dragover.prevent='throttledDragover()'>
   <h1 class='title'>tiny-files browser</h1>
-  <!-- b-field class='file is-info' :class='{ "has-name": !!file }'>
-    <b-upload v-model='file' class='file-label'>
-      <span class='file-cta'>
-        <b-icon class='file-icon' icon='upload' />
-        <span class='file-label'>Click to Upload</span>
-      </span>
-      <span class='file-name' v-if='file'>{{ file.name }}</span>
-    </b-upload>
-  </b-field -->
   <button id='upload-fab' class='has-background-info' v-show='canUpload' @click='upload()'><b-icon icon='file-upload' /></button>
   <tiny-explorer
     v-if='paths'

@@ -5,7 +5,7 @@
     <div id='path'>
       <button
         class='button is-small is-dark'
-        style='margin-right: 0.5rem;'
+        style='margin-right: 0.5rem; margin-left: 0.8rem'
         :disabled='splitDir.length <= 1'
         @click='goto(splitDir.length - 2)'
       >
