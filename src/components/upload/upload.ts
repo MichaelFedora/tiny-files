@@ -3,6 +3,7 @@ import { getFileIcon } from '../../util';
 import Vue from 'vue';
 import { PropValidator } from 'vue/types/options';
 import { debounce, DebouncedFunc } from 'lodash';
+import dataBus from 'services/data-bus';
 
 export default Vue.component('tiny-upload', {
   props: {
@@ -49,6 +50,13 @@ export default Vue.component('tiny-upload', {
 
       if(!this.uploadDir.endsWith('/'))
         this.uploadDir += '/';
+
+      if(this.familiar) {
+        if(this.uploadDir.startsWith('/public'))
+          this.uploadDir = dataBus.publicScope + this.uploadDir.slice('/public'.length);
+        else
+          this.uploadDir = dataBus.privateScope + this.uploadDir;
+      }
 
       for(const entry of this.fileList) {
         this.status = 'uploading ' + entry.file.name + '...';
