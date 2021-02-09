@@ -12,6 +12,7 @@ export default Vue.component('tiny-browse', {
     const data = {
       working: false,
       paths: null as PathedFileInfo[],
+      rawPaths: [] as string[],
       dir: '/',
 
       suppressDragging: false,
@@ -67,11 +68,11 @@ export default Vue.component('tiny-browse', {
       }
       const entries = await Promise.all(dataBus.storeScopes.map(listFilesLoop))
         .then(res => res.reduce((acc, c) => Object.assign(acc, c)));
-      const bigList = Object.keys(entries);
+      this.rawPaths = Object.keys(entries);
 
       let pathData = [] as PathedFileInfo[];
 
-      for(const path of bigList)
+      for(const path of this.rawPaths)
         pathData.push(Object.assign({ }, entries[path], { path }));
 
       if(this.familiarLayout && this.personal) {
@@ -84,12 +85,12 @@ export default Vue.component('tiny-browse', {
             entry.path = '/public' + entry.path.slice(publicScope.length);
         }
 
-        if(!bigList.find(a => a.startsWith(publicScope)))
+        if(!this.rawPaths.find(a => a.startsWith(publicScope)))
           pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
 
       } else {
         for(const scope of dataBus.storeScopes)
-          if(!bigList.find(a => a.startsWith(scope)))
+          if(!this.rawPaths.find(a => a.startsWith(scope)))
             pathData.push({ path: scope === '/' ? '/null' : scope + '/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 })
       }
 
@@ -104,7 +105,17 @@ export default Vue.component('tiny-browse', {
       if(this.working) return;
       this.working = true;
 
-      await tinyApi.files.delete(path);
+      if(this.familiarLayout && this.personal) {
+        if(/^\/public/.test(path))
+          path = dataBus.publicScope + path.slice('/public'.length);
+        else
+          path = dataBus.privateScope + path;
+      }
+
+      if(type === 'folder')
+        await Promise.all(this.rawPaths.filter(a => a.startsWith(path)).map(p => tinyApi.files.delete(p).catch(() => { })));
+      else
+        await tinyApi.files.delete(path).catch(() => { });
 
       this.working = false;
       return this.refresh();
