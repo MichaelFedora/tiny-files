@@ -143,7 +143,7 @@
               <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>Cut</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>Copy</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>Paste Into</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", folder.path)'>Share</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' v-if='folder.path.startsWith("/public")' @click='$emit("share", folder.path)'>Share</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>Delete</b-dropdown-item>
             </template>
           </b-dropdown>

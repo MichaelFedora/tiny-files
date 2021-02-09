@@ -149,7 +149,6 @@ export default Vue.component('tiny-browse', {
     async _copy({ from, paths, to }: { from: string, paths: string[], to: string }): Promise<string[]> {
       const fromPaths = this.mapPaths(paths);
       const toPaths = this.mapPaths(paths.map(p => to + p.slice(from.length)));
-      console.log(from, paths, fromPaths);
       const copyFoo = async (fromPath: string, toPath: string): Promise<void> => {
         const file: Blob = await tinyApi.files.read(fromPath, 'blob');
         await tinyApi.files.write(toPath, await file.arrayBuffer());
@@ -175,21 +174,21 @@ export default Vue.component('tiny-browse', {
     share(path: string | string[]) {
       let link = '';
 
-      if(path instanceof Array) {
-        path = this.mapPaths(path.filter(a => a.startsWith('/public')));
-        if(!path.length) return;
-        if(path.length !== 1) {
-          console.log('share time');
-          link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + 'asdf' + '&share=' + '123456789';
-        } else
-          link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
-
-      } else {
-        path = this.mapPath(path);
+      if(!(path instanceof Array)) {
         if(!path.startsWith('/public'))
           return;
-        link = tinyApi.files.getPublicReadUrl('asdf', path.slice('/public'.length));
+
+        const mapped = this.mapPath(path);
+        path = this.rawPaths.filter(a => a.startsWith(mapped))
       }
+
+      path = this.mapPaths(path.filter(a => a.startsWith('/public')));
+      if(!path.length) return;
+      if(path.length > 1) {
+        console.log('share time');
+        link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + 'asdf' + '&share=' + '123456789';
+      } else
+        link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
 
       DialogProgrammatic.prompt({
         title: 'Share Item(s)',
