@@ -6,6 +6,7 @@ import { FileListAdvance, PathedFileInfo } from 'types';
 import Vue from 'vue';
 
 import UploadModal from 'components/upload/upload';
+import { v4 } from 'uuid';
 
 export default Vue.component('tiny-browse', {
   data() {
@@ -171,7 +172,10 @@ export default Vue.component('tiny-browse', {
       this.working = false;
       return this.refresh();
     },
-    share(path: string | string[]) {
+    async share(path: string | string[]) {
+      if(this.working) return;
+      this.working = true;
+
       let link = '';
 
       if(!(path instanceof Array)) {
@@ -185,8 +189,16 @@ export default Vue.component('tiny-browse', {
       path = this.mapPaths(path.filter(a => a.startsWith('/public')));
       if(!path.length) return;
       if(path.length > 1) {
-        console.log('share time');
-        link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + 'asdf' + '&share=' + '123456789';
+        const shareJson = { entries: path };
+        let uuid = v4();
+        let sharePath = dataBus.publicScope + '/shares/' + uuid + '.json';
+        while(this.rawPaths.includes(sharePath = dataBus.publicScope + '/shares/' + uuid + '.json'))
+          uuid = v4();
+
+        const te = new TextEncoder();
+        await tinyApi.files.write(sharePath, te.encode(JSON.stringify(shareJson)), 'application/json');
+
+        link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + dataBus.storeUser.username + '&share=' + uuid;
       } else
         link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
 
@@ -196,6 +208,9 @@ export default Vue.component('tiny-browse', {
         inputAttrs: { readonly: true, value: link },
         confirmText: 'Got it'
       });
+
+      this.working = false;
+      return this.refresh();
     },
     upload(files?: File[]) {
       ModalProgrammatic.open({

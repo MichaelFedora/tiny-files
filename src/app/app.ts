@@ -5,7 +5,8 @@ import dataBus from 'services/data-bus';
 
 export default Vue.component('app', {
   data() { return {
-    loggedIn: Boolean(dataBus.homeToken)
+    loggedIn: Boolean(dataBus.homeToken),
+    username: dataBus.storeUser.username || ''
   }; },
   watch: {
     $route(n, o) {

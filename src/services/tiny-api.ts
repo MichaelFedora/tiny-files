@@ -50,6 +50,11 @@ class TinyApi {
         .then(res => dataBus[id + 'Token'] = String(res.data), handleError)));
     },
 
+    async getStoreUser(): Promise<{ id: string, username: string }> {
+      return axios.get(dataBus.storeUrl + '/self?sid=' + dataBus.storeToken)
+        .then(res => res.data, handleError);
+    },
+
     async logout(): Promise<void> {
       await Promise.all(dataBus.infoArray.map(({ url, token }) => axios.post(`${url}/auth/logout?sid=${token}`)))
         .catch(handleError);

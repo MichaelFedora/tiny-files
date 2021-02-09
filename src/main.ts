@@ -18,6 +18,8 @@ import LoadingComponent from './components/loading/loading';
 import TinyExplorer from './components/explorer/explorer';
 
 import router from './router';
+import dataBus from 'services/data-bus';
+import tinyApi from 'services/tiny-api';
 
 console.log('Environment:', process.env.NODE_ENV);
 
@@ -46,6 +48,9 @@ const v = new Vue({
 
 (async () => {
   // hmmm
+  if(dataBus.storeToken)
+    dataBus.storeUser = await tinyApi.auth.getStoreUser();
+
 })().then(() => {
   console.log('Initialized Main!');
   v.loaded = true;

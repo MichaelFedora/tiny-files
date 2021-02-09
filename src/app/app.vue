@@ -1,7 +1,7 @@
 <template>
 <div id='app'>
   <b-dropdown id='account-dropdown' position='is-bottom-left' v-if='loggedIn'>
-    <button slot='trigger' id='menu-fab' class='has-background-primary'><b-icon icon='account' /></button>
+    <button slot='trigger' id='menu-fab' class='has-background-primary' :title='username'><b-icon icon='account' /></button>
     <b-dropdown-item @click='settings()' class='hover-info'>settings</b-dropdown-item>
     <b-dropdown-item @click='logout()'>logout</b-dropdown-item>
     <b-dropdown-item @click='deleteSelf()' class='hover-danger'><b-icon icon='alert-circle-outline' size='is-small' />&nbsp;delete self</b-dropdown-item>

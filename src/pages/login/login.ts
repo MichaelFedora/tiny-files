@@ -19,9 +19,10 @@ export default Vue.component('tiny-login', {
       this.working = true;
 
       const res = await tinyApi.auth.getTokens(dataBus.homeUrl, '' + this.$route.query.code).then(() => true, e => false);
-      if(res)
+      if(res) {
+        dataBus.storeUser = await tinyApi.auth.getStoreUser();
         this.$router.push('/browse');
-      else {
+      } else {
         dataBus.clear();
         this.$router.replace('/login');
       }

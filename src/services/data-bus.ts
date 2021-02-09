@@ -1,6 +1,8 @@
 
 class DataBus {
 
+  public storeUser: { id: string, username: string } = null;
+
   public get privateScope(): string { return '/appdata/tiny-files'; }
   public get publicScope(): string { return '/public/tiny-files'; }
 
