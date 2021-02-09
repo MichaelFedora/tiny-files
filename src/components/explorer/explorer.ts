@@ -50,7 +50,6 @@ export default Vue.component('tiny-explorer', {
       dir: '/',
       dirInfo: rootInfo,
 
-      bigList: [] as string[],
       index: { } as { [path: string]: { files: EntryInfo[]; folders: EntryInfo[] } },
       rootInfo,
 
@@ -58,6 +57,11 @@ export default Vue.component('tiny-explorer', {
       working: false,
       progress: 0,
       workingOn: '',
+
+      // clipboard (paths)
+      cut: false,
+      from: '/',
+      clipboard: [] as string[],
 
       // sorting
       sortByName: 'name',
@@ -373,6 +377,72 @@ export default Vue.component('tiny-explorer', {
 
       this.lastActive = name;
     },
+    getSelected(): { items: string[], paths: string[] } {
+      const items: string[] = [];
+      for(const k in this.active) if(this.active[k] === true)
+        items.push(k.startsWith('/') ? k.slice(1) : k);
+
+      let entries: PathedFileInfo[] = [];
+      for(const i of items) {
+        entries = entries.concat(this.paths
+          .filter(a => a.path.startsWith(this.dir + i)));
+      }
+
+      return { items, paths: entries.map(a => a.path) };
+    },
+    cutItem(type: 'file' | 'folder', path: string) {
+      this.cut = true;
+      this.from = this.dir;
+      if(type === 'file')
+        this.clipboard = [path];
+      else
+        this.clipboard = this.paths.filter(a => a.path.startsWith(path)).map(e => e.path)
+    },
+    cutSelected() {
+      this.cut = true;
+      this.from = this.dir;
+      this.clipboard = this.getSelected().paths;
+    },
+    copyItem(type: 'file' | 'folder', path: string) {
+      this.cut = false;
+      this.from = this.dir;
+      if(type === 'file')
+        this.clipboard = [path];
+      else
+        this.clipboard = this.paths.filter(a => a.path.startsWith(path)).map(e => e.path)
+    },
+    copySelected() {
+      this.cut = false;
+      this.from = this.dir;
+      this.clipboard = this.getSelected().paths;
+    },
+    clearClipboard() {
+      this.cut = false;
+      this.from = '/';
+      this.clipboard = [];
+    },
+    paste() {
+      this.pasteInto(this.dir);
+    },
+    pasteInto(path: string) {
+      this.$emit(this.cut ? 'move' : 'copy', { from: this.from, paths: this.clipboard, to: path });
+      if(this.cut) {
+        this.cut = false;
+        this.clipboard = [];
+      }
+      this.from = '/';
+    },
+    async removeSelected() {
+      const selected = this.getSelected().paths;
+      if(!await new Promise<boolean>(res => DialogProgrammatic.confirm({
+        title: 'Delete Selected Items',
+        message: 'Are you sure you want to delete the ' + selected.length + ' selected item(s)?',
+        onConfirm: () => res(true),
+        onCancel: () => res(false)
+      }))) return;
+
+      this.$emit('delete', { type: 'paths', paths: selected });
+    },
     openFolder(folder: string) {
       if(this.dir)
         this.dir = this.dir + folder + '/';
@@ -383,21 +453,13 @@ export default Vue.component('tiny-explorer', {
       if(open)
         this.$emit('open', path);
       else
-        return axios.get(this.mapLink(path), { responseType: 'blob' });
+        return axios.get(this.mapLink(path), { responseType: 'blob' }).then(res => res.data);
     },
     async downloadSelected() {
       if(this.working)
         return;
 
-      const items: string[] = [];
-      for(const k in this.active) if(this.active[k] === true)
-        items.push(k.startsWith('/') ? k.slice(1) : k);
-
-      let allItems: string[] = [];
-      for(const i of items) {
-        allItems = allItems.concat(this.bigList
-          .filter(a => a.startsWith(this.dir.slice(1) + i)));
-      }
+      const { items, paths } = this.getSelected();
 
       let name = items.length === 1 ?
         items[0] :
@@ -405,7 +467,7 @@ export default Vue.component('tiny-explorer', {
           'tiny-files-data' :
           this.splitDir[this.splitDir.length - 1];
 
-      return this.download(allItems, name);
+      return this.download(paths, name);
     },
     async downloadDir(path: string) {
       if(this.working)
@@ -425,7 +487,9 @@ export default Vue.component('tiny-explorer', {
         name = dirName;
       }
 
-      return this.download(this.bigList.filter(a => a.startsWith(path)), name);
+      const downloadPaths = this.paths.filter(a => a.path.startsWith(path)).map(e => e.path);
+
+      return this.download(downloadPaths, name);
     },
     async download(items: string[], name: string) {
       if(this.working)
@@ -443,8 +507,11 @@ export default Vue.component('tiny-explorer', {
       }
       this.progress = 1;
       this.workingOn = 'Serving the Zip';
+      console.log('zipping...');
       const blob = await zip.generateAsync({ type: 'blob' });
+      console.log('serving...');
       FileSaver.saveAs(blob, name.replace('*', ''));
+      console.log('done');
       this.workingOn = '';
       this.working = false;
       this.progress = 0;

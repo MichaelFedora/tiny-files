@@ -20,6 +20,51 @@
     </div>
     <div id='buttons'>
       <div v-show='working' id='tiny-loading-small'></div>
+      <template v-if='!viewOnly'>
+        <button
+          class='button is-small is-dark'
+          :class='{ "has-text-warning": clipboard.length && cut }'
+          :disabled='!anyActive || working'
+          title='Cut'
+          @click='cutSelected()'
+        >
+          <b-icon icon='content-cut' />
+        </button>
+        <button
+          class='button is-small is-dark'
+          :class='{ "has-text-info": clipboard.length && !cut }'
+          :disabled='!anyActive || working'
+          title='Copy'
+          @click='copySelected()'
+        >
+          <b-icon icon='content-copy' />
+        </button>
+        <button
+          class='button is-small is-dark'
+          :class='{
+            "has-text-warning": clipboard.length && cut,
+            "has-text-info": clipboard.length && !cut
+          }'
+          :disabled='working || clipboard.length < 1'
+          :title='clipboard.length ? "Paste (" + clipboard.length + ")" : "Paste"'
+          @click='paste()'
+        >
+          <b-icon icon='content-paste' />
+        </button>
+        <button
+          class='button is-small is-dark'
+          :disabled='working || clipboard.length < 1'
+          title='Clear'
+          @click='clearClipboard()'
+        >
+          <b-icon icon='backspace-outline' />
+        </button>
+        <hr>
+        <button class='button is-small is-dark' :disabled='!anyActive || working' title='Delete' @click='removeSelected()'>
+          <b-icon icon='delete-forever' />
+        </button>
+        <hr>
+      </template>
       <button class='button is-small is-dark' :disabled='!anyActive || working' title='Download' @click='downloadSelected()'>
         <b-icon icon='download' />
       </button>
@@ -88,6 +133,9 @@
             </button>
             <b-dropdown-item aria-role='list-item' @click='downloadDir(dir + folder.name + "/")'>Download</b-dropdown-item>
             <template v-if='!viewOnly'>
+              <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>Cut</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>Copy</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>Paste Into</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>Delete</b-dropdown-item>
             </template>
           </b-dropdown>
@@ -114,6 +162,8 @@
           </button>
           <b-dropdown-item aria-role='list-item' @click='openFile(file.path)'>Open</b-dropdown-item>
           <template v-if='!viewOnly'>
+            <b-dropdown-item aria-role='list-item' @click='cutItem("file", file.path)'>Cut</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='copyItem("file", file.path)'>Copy</b-dropdown-item>
             <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "file", path: file.path })'>Delete</b-dropdown-item>
           </template>
         </b-dropdown>
@@ -272,6 +322,14 @@
       align-items: center;
       > a, > button {
         background-color: transparent;
+      }
+
+      > hr {
+        display: inline-block;
+        height: 1em;
+        width: 0;
+        margin: 0 0.4em;
+        padding: 0 1px;
       }
     }
   }

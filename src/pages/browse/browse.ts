@@ -103,22 +103,58 @@ export default Vue.component('tiny-browse', {
     open(path: string) {
       window.open(this.getLink(path), '__blank');
     },
-    async remove({ type, path }: { type: 'folder' | 'file', path: string }) {
+    mapPaths(paths: string[]) {
+      if(this.familiarLayout && this.personal) {
+        paths = paths.map(p => {
+          if(/^\/public/.test(p))
+            return dataBus.publicScope + p.slice('/public'.length);
+          else
+            return dataBus.privateScope + p;
+        });
+      }
+
+      return paths;
+    },
+    async remove({ type, paths, path }: { type: 'folder' | 'file' | 'paths', paths?: string[], path?: string }) {
       if(this.working) return;
       this.working = true;
 
-      if(this.familiarLayout && this.personal) {
-        if(/^\/public/.test(path))
-          path = dataBus.publicScope + path.slice('/public'.length);
-        else
-          path = dataBus.privateScope + path;
-      }
+      if(path)
+        paths = [path];
 
-      if(type === 'folder')
-        await Promise.all(this.rawPaths.filter(a => a.startsWith(path)).map(p => tinyApi.files.delete(p).catch(() => { })));
+      paths = this.mapPaths(paths);
+
+       /// @todo when switching to bulk delete, check if there are no raw paths, and return early if so
+      if(type !== 'file')
+        await Promise.all(this.rawPaths.filter(a => paths.find(p => a.startsWith(p))).map(p => tinyApi.files.delete(p).catch(() => { })));
       else
-        await tinyApi.files.delete(path).catch(() => { });
+        await tinyApi.files.delete(paths[0]).catch(() => { });
 
+      this.working = false;
+      return this.refresh();
+    },
+    async _copy({ from, paths, to }: { from: string, paths: string[], to: string }): Promise<string[]> {
+      const fromPaths = this.mapPaths(paths.map(p => from + p));
+      const toPaths = this.mapPaths(paths.map(p => to + p));
+      const copyFoo = async (fromPath: string, toPath: string): Promise<void> => {
+        const file: Blob = await tinyApi.files.read(fromPath, 'blob');
+        await tinyApi.files.write(toPath, await file.arrayBuffer());
+      }
+      await Promise.all(paths.map((_, i) => copyFoo(fromPaths[i], toPaths[i]).catch(() => { })));
+      return fromPaths;
+    },
+    async copy({ from, paths, to }: { from: string, paths: string[], to: string }) {
+      if(this.working) return;
+      this.working = true;
+      await this._copy({ from, paths, to });
+      this.working = false;
+      return this.refresh();
+    },
+    async move({ from, paths, to }: { from: string, paths: string[], to: string }) {
+      if(this.working) return;
+      this.working = true;
+      const fromPaths = await this._copy({ from, paths, to });
+      await Promise.all(fromPaths.map(p => tinyApi.files.delete(p).catch(() => { })));
       this.working = false;
       return this.refresh();
     },

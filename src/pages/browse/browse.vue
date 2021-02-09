@@ -9,6 +9,8 @@
     @update:dir='dir = $event'
     @open='open'
     @delete='remove'
+    @copy='copy'
+    @move='move'
     :mapLink='getLink'
     rootRoute='/browse'
     :rootName='(familiarLayout && personal) ? "personal" : "root"'
