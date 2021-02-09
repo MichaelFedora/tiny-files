@@ -60,6 +60,8 @@ export default Vue.component('tiny-browse', {
         let page = undefined;
         do {
           const res = await tinyApi.files.listFiles(scope, true, page);
+          if(scope === '/')
+            scope = '';
           for(const e in res.entries)
             ret[scope + e] = res.entries[e];
           page = res.page || undefined;
