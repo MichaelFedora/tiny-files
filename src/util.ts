@@ -22,11 +22,11 @@ export function makeInitializerComponent(h: CreateElement, loadingComponent: any
   return h('div', { staticStyle: makeCenterStyle() }, [h(loadingComponent)]);
 }
 
-export async function handleError(e: Error, action?: string) {
+export async function handleError(e: Error, action?: string, wait?: boolean) {
 
   const message = (e as AxiosError).response?.data?.message || e.message || String(e);
 
-   return new Promise<void>(res => DialogProgrammatic.alert({
+   const p = new Promise<void>(res => DialogProgrammatic.alert({
     title: action ? 'Error ' + action : 'Error',
     message,
     type: 'is-danger',
@@ -34,6 +34,9 @@ export async function handleError(e: Error, action?: string) {
     onConfirm: () => res(),
     onCancel: () => res()
   }));
+
+  if(wait)
+    await p;
 }
 
 
