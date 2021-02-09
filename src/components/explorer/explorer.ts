@@ -9,6 +9,7 @@ import axios from 'axios';
 
 import { PathedFileInfo } from 'types';
 import { getFileIcon } from '../../util';
+import { DialogProgrammatic } from 'buefy';
 
 interface EntryInfo {
   path: string;
@@ -203,7 +204,23 @@ export default Vue.component('tiny-explorer', {
       this.dir = d.endsWith('/') ? d : d + '/';
     },
     newFolder() {
-      console.log('create folder');
+      DialogProgrammatic.prompt({
+        title: 'New Folder Name',
+        message: '',
+        onConfirm: res => {
+          this.$set(this.index, this.dir + '/' + res, { files: [], folders: [] });
+          this.index[this.dir].folders.push({
+            name: res,
+            path: this.dir + '/' + res,
+            lastModified: '--',
+            rawLastModified: 0,
+            rawSize: 0,
+            size: '--',
+            itemCount: -1
+          });
+          this.$forceUpdate();
+        }
+      });
     },
     refresh() { // make index
 
@@ -226,7 +243,7 @@ export default Vue.component('tiny-explorer', {
             const subFName = folders[i + 1].slice(folders[i + 1].lastIndexOf('/', folders[i + 1].length - 2)).replace(/\//g, '');
             if(!index[fpath].folders.find(a => a.name === subFName)) {
               index[fpath].folders.push({
-                path: fpath + '/' + subFName,
+                path: fpath + subFName,
                 name: subFName,
                 size: '--',
                 rawSize: 0,

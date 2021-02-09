@@ -72,7 +72,11 @@
           :href='href'
           @click.prevent.stop='clickItem($event, folder, true)'
         >
-          <b-icon icon='folder' style='color: #FFD54F' :title='folder.itemCount + " items"' />
+          <b-icon
+            :icon='folder.itemCount < 0 ? "folder-alert" : "folder"'
+            :style='{ color: folder.itemCount < 0 ? "#FFD54F" : "#FFD54F" }'
+            :title='folder.itemCount < 0 ? "will be removed unless files are uploaded inside" : (folder.itemCount + " items")'
+          />
           <div style='padding-left: 1em'>
             <span>{{ folder.name }}</span>
           </div>
