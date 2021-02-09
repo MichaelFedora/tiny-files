@@ -49,6 +49,10 @@ button, a {
   }
 }
 
+.notices .toast.is-dark {
+  background-color:rgba(0, 0, 0, 0.5);
+}
+
 a:disabled, a.disabled {
   color: $grey !important;
   cursor: default;

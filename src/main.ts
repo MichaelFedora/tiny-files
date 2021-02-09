@@ -5,7 +5,7 @@ import('@mdi/font/css/materialdesignicons.css');
 
 
 import { // @ts-ignore
-  Button, Input, Field, Icon, Loading, Dialog, Modal, Dropdown, DialogProgrammatic, Upload
+  Button, Input, Field, Icon, Loading, Dialog, Modal, Toast, Dropdown, DialogProgrammatic, Upload
 } from 'buefy';
 import './buefy.scss';
 
@@ -28,6 +28,7 @@ Vue.use(Icon);
 Vue.use(Loading);
 Vue.use(Dialog);
 Vue.use(Modal);
+Vue.use(Toast);
 Vue.use(Dropdown);
 Vue.use(Upload);
 

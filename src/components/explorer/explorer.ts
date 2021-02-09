@@ -9,7 +9,7 @@ import axios from 'axios';
 
 import { PathedFileInfo } from 'types';
 import { getFileIcon } from '../../util';
-import { DialogProgrammatic } from 'buefy';
+import { DialogProgrammatic, ToastProgrammatic } from 'buefy';
 
 interface EntryInfo {
   path: string;
@@ -45,7 +45,7 @@ export default Vue.component('tiny-explorer', {
       rawLastModified: 0
     };
 
-    return {
+    const data = {
       // "exploring"
       dir: '/',
       dirInfo: rootInfo,
@@ -82,8 +82,9 @@ export default Vue.component('tiny-explorer', {
         left: '0px',
         height: '0px',
         width: '0px'
-      }
+      },
     };
+    return data;
   },
   computed: {
     splitDir(): string[] {
@@ -146,6 +147,7 @@ export default Vue.component('tiny-explorer', {
   async mounted() {
     window.addEventListener('mouseup', this.drawEnd);
     window.addEventListener('mousemove', this.drawContinue);
+    window.addEventListener('keydown', this.shortcutHandler);
 
     this.refresh();
 
@@ -157,6 +159,7 @@ export default Vue.component('tiny-explorer', {
   destroyed() {
     window.removeEventListener('mouseup', this.drawEnd);
     window.removeEventListener('mousemove', this.drawContinue);
+    window.removeEventListener('keydown', this.shortcutHandler);
   },
   methods: {
     sliceRouteForPath(): string {
@@ -435,6 +438,7 @@ export default Vue.component('tiny-explorer', {
     async removeSelected() {
       const selected = this.getSelected().paths;
       if(!await new Promise<boolean>(res => DialogProgrammatic.confirm({
+        type: 'is-danger',
         title: 'Delete Selected Items',
         message: 'Are you sure you want to delete the ' + selected.length + ' selected item(s)?',
         onConfirm: () => res(true),
@@ -442,6 +446,9 @@ export default Vue.component('tiny-explorer', {
       }))) return;
 
       this.$emit('delete', { type: 'paths', paths: selected });
+    },
+    shareSelected() {
+      this.$emit('share', this.getSelected().paths)
     },
     openFolder(folder: string) {
       if(this.dir)
@@ -590,6 +597,36 @@ export default Vue.component('tiny-explorer', {
         this.active = { };
       for(const i of newActive)
         Vue.set(this.active, i, true);
+    },
+    shortcutHandler(event: KeyboardEvent) {
+      if(document.querySelector('div.modal.is-active'))
+        return;
+
+      if(event.ctrlKey) {
+        if(event.key === 'x' && this.anyActive) {
+          this.cutSelected();
+          ToastProgrammatic.open({ message: 'cut selected', queue: false, position: 'is-bottom' });
+        } else if(event.key === 'c' && this.anyActive) {
+          this.copySelected();
+          ToastProgrammatic.open({ message: 'copy selected', queue: false, position: 'is-bottom' });
+        } else if(event.key === 'v' && this.clipboard.length) {
+          this.paste();
+          ToastProgrammatic.open({ message: 'pasted clipboard', queue: false, position: 'is-bottom' });
+        }
+      } else if(event.shiftKey) {
+        if(event.key === 'N') {
+          event.preventDefault();
+          this.newFolder();
+          ToastProgrammatic.open({ message: 'new folder', queue: false, position: 'is-bottom' });
+        } else if(event.key === 'S') {
+          event.preventDefault();
+          if(this.anyActive)
+            this.shareSelected();
+          else
+            this.$emit('share', this.dir);
+          ToastProgrammatic.open({ message: 'share' + (this.anyActive ? ' selected' : ' dir'), queue: false, position: 'is-bottom' });
+        }
+      }
     },
     getPath(folder: string) {
       return this.rootRoute + this.dir + folder;

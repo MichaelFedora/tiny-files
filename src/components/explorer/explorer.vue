@@ -65,6 +65,12 @@
         </button>
         <hr>
       </template>
+      <template v-if='dir.startsWith("/public")'>
+        <button class='button is-small is-dark' :disabled='!anyActive || working' title='Share' @click='shareSelected()'>
+          <b-icon icon='share' />
+        </button>
+        <hr>
+      </template>
       <button class='button is-small is-dark' :disabled='!anyActive || working' title='Download' @click='downloadSelected()'>
         <b-icon icon='download' />
       </button>
@@ -93,6 +99,7 @@
       <button slot='trigger' class='dot-button hover-primary'>
         <b-icon icon='dots-horizontal' />
       </button>
+      <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", dir)'>Share</b-dropdown-item>
       <b-dropdown-item aria-role='list-item' @click='downloadDir(dir)'>Download</b-dropdown-item>
     </b-dropdown>
   </div>
@@ -118,9 +125,9 @@
           @click.prevent.stop='clickItem($event, folder, true)'
         >
           <b-icon
-            :icon='folder.itemCount < 0 ? "folder-alert" : "folder"'
+            :icon='folder.itemCount < 0 ? "folder-alert" : folder.path.startsWith("/public") ? "folder-search" : "folder"'
             :style='{ color: folder.itemCount < 0 ? "#FFD54F" : "#FFD54F" }'
-            :title='folder.itemCount < 0 ? "will be removed unless files are uploaded inside" : (folder.itemCount + " items")'
+            :title='folder.itemCount < 0 ? "will be removed unless files are uploaded inside" : (folder.itemCount + (folder.path.startsWith("/public") ? " shareable" : "") + " items")'
           />
           <div style='padding-left: 1em'>
             <span>{{ folder.name }}</span>
@@ -136,6 +143,7 @@
               <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>Cut</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>Copy</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>Paste Into</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", folder.path)'>Share</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>Delete</b-dropdown-item>
             </template>
           </b-dropdown>
@@ -164,6 +172,7 @@
           <template v-if='!viewOnly'>
             <b-dropdown-item aria-role='list-item' @click='cutItem("file", file.path)'>Cut</b-dropdown-item>
             <b-dropdown-item aria-role='list-item' @click='copyItem("file", file.path)'>Copy</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", file.path)'>Share</b-dropdown-item>
             <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "file", path: file.path })'>Delete</b-dropdown-item>
           </template>
         </b-dropdown>

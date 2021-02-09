@@ -1,4 +1,4 @@
-import { ModalProgrammatic } from 'buefy';
+import { DialogProgrammatic, ModalProgrammatic } from 'buefy';
 import { debounce, DebouncedFunc, throttle } from 'lodash';
 import dataBus from 'services/data-bus';
 import tinyApi from 'services/tiny-api';
@@ -90,10 +90,14 @@ export default Vue.component('tiny-browse', {
         if(!this.rawPaths.find(a => a.startsWith(publicScope)))
           pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
 
+      } else if(dataBus.storeScopes.includes('/')) {
+        if(!this.rawPaths.find(a => a.startsWith('/public')))
+          pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
+
       } else {
         for(const scope of dataBus.storeScopes)
           if(!this.rawPaths.find(a => a.startsWith(scope)))
-            pathData.push({ path: scope === '/' ? '/null' : scope + '/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 })
+            pathData.push({ path: scope === '/' ? '/null' : scope + '/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
       }
 
       this.paths = pathData;
@@ -102,6 +106,15 @@ export default Vue.component('tiny-browse', {
     },
     open(path: string) {
       window.open(this.getLink(path), '__blank');
+    },
+    mapPath(path: string) {
+      if(this.familiarLayout && this.personal) {
+        if(/^\/public/.test(path))
+          return dataBus.publicScope + path.slice('/public'.length);
+        else
+          return dataBus.privateScope + path;
+      } else
+        return path;
     },
     mapPaths(paths: string[]) {
       if(this.familiarLayout && this.personal) {
@@ -120,9 +133,9 @@ export default Vue.component('tiny-browse', {
       this.working = true;
 
       if(path)
-        paths = [path];
-
-      paths = this.mapPaths(paths);
+        paths = [this.mapPath(path)];
+      else
+        paths = this.mapPaths(paths);
 
        /// @todo when switching to bulk delete, check if there are no raw paths, and return early if so
       if(type !== 'file')
@@ -134,8 +147,9 @@ export default Vue.component('tiny-browse', {
       return this.refresh();
     },
     async _copy({ from, paths, to }: { from: string, paths: string[], to: string }): Promise<string[]> {
-      const fromPaths = this.mapPaths(paths.map(p => from + p));
-      const toPaths = this.mapPaths(paths.map(p => to + p));
+      const fromPaths = this.mapPaths(paths);
+      const toPaths = this.mapPaths(paths.map(p => to + p.slice(from.length)));
+      console.log(from, paths, fromPaths);
       const copyFoo = async (fromPath: string, toPath: string): Promise<void> => {
         const file: Blob = await tinyApi.files.read(fromPath, 'blob');
         await tinyApi.files.write(toPath, await file.arrayBuffer());
@@ -157,6 +171,32 @@ export default Vue.component('tiny-browse', {
       await Promise.all(fromPaths.map(p => tinyApi.files.delete(p).catch(() => { })));
       this.working = false;
       return this.refresh();
+    },
+    share(path: string | string[]) {
+      let link = '';
+
+      if(path instanceof Array) {
+        path = this.mapPaths(path.filter(a => a.startsWith('/public')));
+        if(!path.length) return;
+        if(path.length !== 1) {
+          console.log('share time');
+          link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + 'asdf' + '&share=' + '123456789';
+        } else
+          link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
+
+      } else {
+        path = this.mapPath(path);
+        if(!path.startsWith('/public'))
+          return;
+        link = tinyApi.files.getPublicReadUrl('asdf', path.slice('/public'.length));
+      }
+
+      DialogProgrammatic.prompt({
+        title: 'Share Item(s)',
+        message: 'Here is the link to share:',
+        inputAttrs: { readonly: true, value: link },
+        confirmText: 'Got it'
+      });
     },
     upload(files?: File[]) {
       ModalProgrammatic.open({

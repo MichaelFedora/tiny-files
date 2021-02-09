@@ -11,6 +11,7 @@
     @delete='remove'
     @copy='copy'
     @move='move'
+    @share='share'
     :mapLink='getLink'
     rootRoute='/browse'
     :rootName='(familiarLayout && personal) ? "personal" : "root"'
