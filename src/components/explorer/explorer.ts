@@ -60,7 +60,7 @@ export default Vue.component('tiny-explorer', {
 
       // clipboard (paths)
       cut: false,
-      from: '/',
+      from: '',
       clipboard: [] as string[],
 
       // sorting
@@ -119,7 +119,7 @@ export default Vue.component('tiny-explorer', {
       this.lastActive = '';
       this.lastActiveTime = 0;
 
-      if(this.sliceRouteForPath() !== this.dir)
+      if(this.sliceRouteForDir() !== this.dir)
         this.$router.replace({ path: this.rootRoute + this.dir, query: this.$route.query });
 
       if(this.dir.length > 1 && this.index && this.index[this.dir]) {
@@ -137,8 +137,8 @@ export default Vue.component('tiny-explorer', {
       this.refresh();
     },
     $route() {
-      if(this.sliceRouteForPath() !== this.dir && this.index[this.sliceRouteForPath()])
-        this.dir = this.sliceRouteForPath();
+      if(this.sliceRouteForDir() !== this.dir && this.index[this.sliceRouteForDir()])
+        this.dir = this.sliceRouteForDir();
     },
     active() {
       this.anyActive = this.active && Object.values(this.active).reduce((a, b) => a || b, false);
@@ -151,8 +151,8 @@ export default Vue.component('tiny-explorer', {
 
     this.refresh();
 
-    if(this.index[this.sliceRouteForPath()])
-      this.dir = this.sliceRouteForPath();
+    if(this.index[this.sliceRouteForDir()])
+      this.dir = this.sliceRouteForDir();
     else
       this.$router.replace({ path: this.rootRoute, query: this.$route.query });
   },
@@ -162,7 +162,7 @@ export default Vue.component('tiny-explorer', {
     window.removeEventListener('keydown', this.shortcutHandler);
   },
   methods: {
-    sliceRouteForPath(): string {
+    sliceRouteForDir(): string {
       let path = this.$route.path.slice(this.rootRoute.length);
       if(!path.endsWith('/'))
         path += '/';
@@ -215,10 +215,10 @@ export default Vue.component('tiny-explorer', {
         title: 'New Folder Name',
         message: '',
         onConfirm: res => {
-          this.$set(this.index, this.dir + '/' + res, { files: [], folders: [] });
+          this.$set(this.index, this.dir + res + '/', { files: [], folders: [] });
           this.index[this.dir].folders.push({
             name: res,
-            path: this.dir + '/' + res,
+            path: this.dir + res,
             lastModified: '--',
             rawLastModified: 0,
             rawSize: 0,
@@ -395,7 +395,7 @@ export default Vue.component('tiny-explorer', {
     },
     cutItem(type: 'file' | 'folder', path: string) {
       this.cut = true;
-      this.from = this.dir;
+      this.from = this.dir.slice(0, -1);
       if(type === 'file')
         this.clipboard = [path];
       else
@@ -403,12 +403,12 @@ export default Vue.component('tiny-explorer', {
     },
     cutSelected() {
       this.cut = true;
-      this.from = this.dir;
+      this.from = this.dir.slice(0, -1);
       this.clipboard = this.getSelected().paths;
     },
     copyItem(type: 'file' | 'folder', path: string) {
       this.cut = false;
-      this.from = this.dir;
+      this.from = this.dir.slice(0, -1);
       if(type === 'file')
         this.clipboard = [path];
       else
@@ -416,16 +416,16 @@ export default Vue.component('tiny-explorer', {
     },
     copySelected() {
       this.cut = false;
-      this.from = this.dir;
+      this.from = this.dir.slice(0, -1);
       this.clipboard = this.getSelected().paths;
     },
     clearClipboard() {
       this.cut = false;
-      this.from = '/';
+      this.from = this.dir.slice(0, -1);
       this.clipboard = [];
     },
     paste() {
-      this.pasteInto(this.dir);
+      this.pasteInto(this.dir.slice(0, -1));
     },
     pasteInto(path: string) {
       this.$emit(this.cut ? 'move' : 'copy', { from: this.from, paths: this.clipboard, to: path });
@@ -433,7 +433,7 @@ export default Vue.component('tiny-explorer', {
         this.cut = false;
         this.clipboard = [];
       }
-      this.from = '/';
+      this.from = '';
     },
     async removeSelected() {
       const selected = this.getSelected().paths;
@@ -607,6 +607,49 @@ export default Vue.component('tiny-explorer', {
       for(const i of newActive)
         Vue.set(this.active, i, true);
     },
+    fileDragStart(event: DragEvent, file: EntryInfo) {
+      this.$emit('dragging', true);
+      event.dataTransfer.setData('text/plain', file.path);
+      event.dataTransfer.effectAllowed = 'move';
+      (event.target as HTMLElement).style.cursor = 'move';
+      (event.target as HTMLElement).style.opacity = '0.5';
+    },
+    folderDragStart(event: DragEvent, folder: EntryInfo) {
+      this.$emit('dragging', true);
+      event.dataTransfer.setData('text/plain', folder.path);
+      event.dataTransfer.effectAllowed = 'move';
+      (event.target as HTMLElement).style.cursor = 'move';
+      (event.target as HTMLElement).style.opacity = '0.5';
+    },
+    dragEnd(event: DragEvent) {
+      (event.target as HTMLElement).style.cursor = 'default';
+      (event.target as HTMLElement).style.opacity = '';
+      this.$nextTick(() => this.$emit('draggingEnd', true));
+    },
+    dragOver(event: DragEvent) {
+      event.dataTransfer.dropEffect = 'move';
+    },
+    nullEvent(event: DragEvent) { event.dataTransfer.dropEffect = 'none'; },
+    folderDrop(event: DragEvent, folder: EntryInfo) {
+      let paths: string[];
+      let from = '';
+      if(!this.anyActive) {
+        const path = event.dataTransfer.getData('text/plain');
+        paths = this.paths.filter(a => a.path.startsWith(path)).map(a => a.path);
+        if(paths.length < 1)
+          return;
+
+        from = path.slice(0, path.lastIndexOf('/'));
+      } else {
+        paths = this.getSelected().paths;
+        from = this.dir.slice(0, -1);
+      }
+
+      if(from === folder.path)
+        return;
+      // move
+      this.$emit(event.ctrlKey ? 'copy' : 'move', { from, paths, to: folder.path });
+    },
     shortcutHandler(event: KeyboardEvent) {
       if(this.viewOnly || document.querySelector('div.modal.is-active'))
         return;
@@ -632,7 +675,7 @@ export default Vue.component('tiny-explorer', {
           if(this.anyActive)
             this.shareSelected();
           else
-            this.$emit('share', this.dir);
+            this.$emit('share', this.dir.slice(0, -1));
           ToastProgrammatic.open({ message: 'share' + (this.anyActive ? ' selected' : ' dir'), queue: false, position: 'is-bottom' });
         }
       }

@@ -124,6 +124,11 @@
           :class='{ active: active["/" + folder.name], "last-active": lastActive === "/" + folder.name }'
           :href='href'
           @click.prevent.stop='clickItem($event, folder, true)'
+          draggable
+          @drop.prevent='folderDrop($event, folder)'
+          @dragover.prevent='dragOver'
+          @dragstart='folderDragStart($event, folder)'
+          @dragend='dragEnd'
         >
           <b-icon
             :icon='folder.itemCount < 0 ? "folder-alert" : folder.path.startsWith("/public") ? "folder-search" : "folder"'
@@ -158,6 +163,11 @@
         :class='{ active: active[file.name], "last-active": lastActive === file.name }'
         class='file exp-grid'
         @click.prevent.stop='clickItem($event, file)'
+        draggable
+        @drop.prevent='nullEvent'
+        @dragover.prevent='nullEvent'
+        @dragstart='fileDragStart($event, file)'
+        @dragend='dragEnd'
       >
         <b-icon :icon='file.fileIcon' :style='{ color: file.fileIconColor }' :title='file.contentType' />
         <div style='padding-left: 1em'>

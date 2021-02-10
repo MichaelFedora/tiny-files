@@ -1,5 +1,5 @@
 import { DialogProgrammatic, ModalProgrammatic } from 'buefy';
-import { debounce, DebouncedFunc, throttle } from 'lodash';
+import { debounce, DebouncedFunc } from 'lodash';
 import dataBus from 'services/data-bus';
 import tinyApi from 'services/tiny-api';
 import { FileListAdvance, PathedFileInfo } from 'types';
@@ -16,7 +16,7 @@ export default Vue.component('tiny-browse', {
       rawPaths: [] as string[],
       dir: '/',
 
-      suppressDragging: false,
+      suppressDrag: false,
       dropFiles: [] as File[],
       dragging: false,
       throttledDragover: null as DebouncedFunc<() => void>,
@@ -51,6 +51,14 @@ export default Vue.component('tiny-browse', {
     await this.refresh();
   },
   methods: {
+    dragOver(event: DragEvent) {
+      if(!this.suppressDrag) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      }
+
+      this.throttledDragover();
+    },
     async refresh() {
       if(this.working) return;
       this.working = true;
@@ -149,22 +157,27 @@ export default Vue.component('tiny-browse', {
     async _copy({ from, paths, to }: { from: string, paths: string[], to: string }): Promise<string[]> {
       const fromPaths = this.mapPaths(paths);
       const toPaths = this.mapPaths(paths.map(p => to + p.slice(from.length)));
+
+      if(fromPaths[0] === toPaths[0])
+        return [];
+
       const copyFoo = async (fromPath: string, toPath: string): Promise<void> => {
         const file: Blob = await tinyApi.files.read(fromPath, 'blob');
         await tinyApi.files.write(toPath, await file.arrayBuffer());
       }
       await Promise.all(paths.map((_, i) => copyFoo(fromPaths[i], toPaths[i]).catch(() => { })));
+
       return fromPaths;
     },
     async copy({ from, paths, to }: { from: string, paths: string[], to: string }) {
-      if(this.working) return;
+      if(this.working || from === to || paths.length === 0) return;
       this.working = true;
       await this._copy({ from, paths, to });
       this.working = false;
       return this.refresh();
     },
     async move({ from, paths, to }: { from: string, paths: string[], to: string }) {
-      if(this.working) return;
+      if(this.working || from === to) return;
       this.working = true;
       const fromPaths = await this._copy({ from, paths, to });
       await Promise.all(fromPaths.map(p => tinyApi.files.delete(p).catch(() => { })));

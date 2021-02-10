@@ -1,6 +1,5 @@
 <template>
-<div id='tiny-browse' :class='{ blur: dragging }'
-    @dragover.prevent='throttledDragover()'>
+<div id='tiny-browse' :class='{ blur: dragging && !suppressDrag }' @dragover='dragOver'>
   <h1 class='title'>tiny-files browser</h1>
   <button id='upload-fab' class='has-background-info' v-show='canUpload' @click='upload()'><b-icon icon='file-upload' /></button>
   <tiny-explorer
@@ -16,9 +15,9 @@
     rootRoute='/browse'
     :rootName='(familiarLayout && personal) ? "personal" : "root"'
     @dragging='suppressDrag = true'
-    @draggingEnd='suppressDrag = false'
+    @draggingEnd='() => { suppressDrag = false; throttledDragover.flush(); }'
   />
-  <section v-if='dragging' id='upload-section' @dragover.prevent='throttledDragover()'>
+  <section v-if='dragging && !suppressDrag' id='upload-section' @dragover.prevent='throttledDragover()'>
     <b-field>
       <b-upload
         v-model='dropFiles'
