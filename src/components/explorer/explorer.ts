@@ -474,7 +474,7 @@ export default Vue.component('tiny-explorer', {
           'tiny-files-data' :
           this.splitDir[this.splitDir.length - 1];
 
-      return this.download(paths, name);
+      return this.download(this.dir, paths, name);
     },
     async downloadDir(path: string) {
       if(this.working)
@@ -496,21 +496,30 @@ export default Vue.component('tiny-explorer', {
 
       const downloadPaths = this.paths.filter(a => a.path.startsWith(path)).map(e => e.path);
 
-      return this.download(downloadPaths, name);
+      return this.download(path.slice(0, -1), downloadPaths, name);
     },
-    async download(items: string[], name: string) {
+    async download(root: string, items: string[], name: string) {
       if(this.working)
         return;
       this.working = true;
       this.progress = 0;
 
+      if(items.length === 1 && !items[0].slice(root.length + 1).includes('/')) {
+        FileSaver.saveAs(this.mapLink(items[0]), name.replace('*', ''));
+        this.working = false;
+        return;
+      }
+
+      const prefixLen = root.length;
+
       const zip = new JSZip();
       for(let n = 0, it = items[n]; n < items.length; n++, it = items[n]) {
         console.log('download:', it);
+        const itName = it.slice(prefixLen);
         this.progress = n / items.length;
-        this.workingOn = 'Zipping ' + it;
-        await new Promise(resolve => setTimeout(resolve, 500));
-        zip.file(it, await this.openFile(it, false));
+        this.workingOn = 'Zipping ' + itName;
+        await new Promise(resolve => setTimeout(resolve, 333));
+        zip.file(itName, await this.openFile(it, false));
       }
       this.progress = 1;
       this.workingOn = 'Serving the Zip';

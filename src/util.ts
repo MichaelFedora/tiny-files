@@ -57,3 +57,17 @@ export function getFileIcon(contentType: string): { fileIcon: string; fileIconCo
     return { fileIcon: 'file-video', fileIconColor: '#673AB7' };
   return { fileIcon: 'file', fileIconColor: '#78909C' };
 }
+
+export function computeShortestPath(paths: string[]): string {
+  let shortestPath = paths[0];
+  for(const path of paths)
+    if(path.length < shortestPath.length)
+      shortestPath = path;
+
+  shortestPath = shortestPath.slice(0, shortestPath.lastIndexOf('/'));
+
+  while(paths.find(a => !a.startsWith(shortestPath + '/')))
+    shortestPath = shortestPath.slice(0, shortestPath.lastIndexOf('/'));
+
+  return shortestPath;
+}

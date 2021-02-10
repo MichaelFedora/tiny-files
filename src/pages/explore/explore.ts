@@ -2,7 +2,7 @@ import axios from 'axios';
 import dataBus from 'services/data-bus';
 import tinyApi from 'services/tiny-api';
 import { PathedFileInfo } from 'types';
-import { handleError } from '../../util';
+import { computeShortestPath, handleError } from '../../util';
 import Vue from 'vue';
 
 export default Vue.component('tiny-explore', {
@@ -24,7 +24,7 @@ export default Vue.component('tiny-explore', {
   },
   computed: {
     rootName(): string {
-      return this.user + "@" + this.store.replace(/^.+?:\/\//, '');
+      return this.user + "@" + this.store.replace(/^.+?:\/\//, '') + this.rootPath;
     }
   },
   async mounted() {
@@ -47,12 +47,26 @@ export default Vue.component('tiny-explore', {
        + `${dataBus.publicScope.slice(publicRootLength)}/shares/${this.share}.json`)
        .then(res => res.data.entries, e => { handleError(e); return [] });
 
+      if(!this.rawPaths.length) {
+        this.paths = [];
+        this.working = false;
+        return;
+      }
+
       const entries = await axios.post(`${this.store}/public-info/${this.user}`, this.rawPaths.map(p => p.slice(publicRootLength)))
         .then(res => res.data, e => { handleError(e); return { } });
 
+      if(Object.keys(entries).length !== this.rawPaths.length) {
+        this.paths = [];
+        this.working = false;
+        return;
+      }
+
+      this.rootPath = computeShortestPath(this.rawPaths);
+
       const pathData = [] as PathedFileInfo[];
       for(const path of this.rawPaths)
-        pathData.push(Object.assign({ }, entries[path.slice(publicRootLength)], { path }));
+        pathData.push(Object.assign({ }, entries[path.slice(publicRootLength)], { path: path.slice(this.rootPath.length) }));
 
       // get root path and abstract
 
