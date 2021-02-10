@@ -55,7 +55,6 @@ export default Vue.component('tiny-browse', {
       if(this.working) return;
       this.working = true;
 
-      // assume one page for now, but will have to fix that later
       const listFilesLoop = async (scope: string) => {
         const ret: FileListAdvance['entries'] = { };
         let page = undefined;

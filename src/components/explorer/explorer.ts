@@ -120,7 +120,7 @@ export default Vue.component('tiny-explorer', {
       this.lastActiveTime = 0;
 
       if(this.sliceRouteForPath() !== this.dir)
-        this.$router.replace({ path: this.rootRoute + this.dir });
+        this.$router.replace({ path: this.rootRoute + this.dir, query: this.$route.query });
 
       if(this.dir.length > 1 && this.index && this.index[this.dir]) {
         const idx = this.dir.lastIndexOf('/', this.dir.length - 2);
@@ -154,7 +154,7 @@ export default Vue.component('tiny-explorer', {
     if(this.index[this.sliceRouteForPath()])
       this.dir = this.sliceRouteForPath();
     else
-      this.$router.replace(this.rootRoute);
+      this.$router.replace({ path: this.rootRoute, query: this.$route.query });
   },
   destroyed() {
     window.removeEventListener('mouseup', this.drawEnd);
@@ -599,7 +599,7 @@ export default Vue.component('tiny-explorer', {
         Vue.set(this.active, i, true);
     },
     shortcutHandler(event: KeyboardEvent) {
-      if(document.querySelector('div.modal.is-active'))
+      if(this.viewOnly || document.querySelector('div.modal.is-active'))
         return;
 
       if(event.ctrlKey) {

@@ -64,12 +64,12 @@
           <b-icon icon='delete-forever' />
         </button>
         <hr>
-      </template>
-      <template v-if='dir.startsWith("/public")'>
-        <button class='button is-small is-dark' :disabled='!anyActive || working' title='Share' @click='shareSelected()'>
-          <b-icon icon='share' />
-        </button>
-        <hr>
+        <template v-if='dir.startsWith("/public")'>
+          <button class='button is-small is-dark' :disabled='!anyActive || working' title='Share' @click='shareSelected()'>
+            <b-icon icon='share' />
+          </button>
+          <hr>
+        </template>
       </template>
       <button class='button is-small is-dark' :disabled='!anyActive || working' title='Download' @click='downloadSelected()'>
         <b-icon icon='download' />
@@ -83,6 +83,7 @@
     >
       <b-icon icon='folder-plus' style='color: #FFD54F' />
     </button>
+    <span v-else></span>
     <button class='button is-dark' @click='sort("name")'>
       <span>Name</span>
       <b-icon v-show='sortByName === "name"' :icon='sortByDir ? "chevron-up" : "chevron-down"' />
@@ -99,7 +100,7 @@
       <button slot='trigger' class='dot-button hover-primary'>
         <b-icon icon='dots-horizontal' />
       </button>
-      <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", dir)'>Share</b-dropdown-item>
+      <b-dropdown-item aria-role='list-item' v-if='!viewOnly && dir.startsWith("/public")' @click='$emit("share", dir)'>Share</b-dropdown-item>
       <b-dropdown-item aria-role='list-item' @click='downloadDir(dir)'>Download</b-dropdown-item>
     </b-dropdown>
   </div>

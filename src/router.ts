@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 
 const HomePage = () => import('./pages/home/home');
 const BrowsePage = () => import('./pages/browse/browse');
+const ExplorePage = () => import('./pages/explore/explore');
 const SettingsPage = () => import('./pages/settings/settings');
 const LoginPage = () => import('./pages/login/login');
 import NotFoundPage from './pages/not-found/not-found';
@@ -18,7 +19,7 @@ const router = new VueRouter({
   routes: [
     { path: '/', redirect: '/browse', name: 'home' }, // no idea
     { path: '/browse**', component: BrowsePage, name: 'browse' }, // own files
-    // { path: '/explore/:origin/:username/:share/**', component: ExplorePage, name: 'explore' }, // other's files
+    { path: '/explore**', component: ExplorePage, name: 'explore' }, // other's files
     { path: '/settings', component: SettingsPage, name: 'settings' }, // public pages, sharing, customizing file/db conns, etc
     { path: '/login', component: LoginPage, name: 'login' }, // loggin in (obv)
     { path: '**', component: NotFoundPage, name: 'not-found' }
@@ -43,7 +44,7 @@ router.beforeEach((to, from, next) => {
     } else document.title = 'tiny files';
   }
 
-  if(!dataBus.homeToken && !/^\/login/.test(to.path))
+  if(!dataBus.homeToken && !/^\/(login|explore)/.test(to.path))
     next('/login?goto=' + to.fullPath);
 
   next();

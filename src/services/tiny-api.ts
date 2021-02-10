@@ -146,8 +146,8 @@ class TinyApi {
         .catch(e => { handleError(e); throw e; });
     },
 
-    getPublicReadUrl(user: string, path: string): string {
-      return dataBus.storeUrl + '/public/' + user + path;
+    getPublicReadUrl(user: string, path: string, store?: string): string {
+      return (store || dataBus.storeUrl) + '/public/' + user + path;
     }
   });
 
