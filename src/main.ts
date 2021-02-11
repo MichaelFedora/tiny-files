@@ -34,6 +34,12 @@ Vue.use(Toast);
 Vue.use(Dropdown);
 Vue.use(Upload);
 
+declare const docs: boolean;
+if(docs && !location.hash) {
+  const [_, path, query] = location.href.match(/^(.+?)(\?.+)/);
+  location.href = path + '#' + query
+}
+
 const v = new Vue({
   router,
   el: '#app',
@@ -46,17 +52,11 @@ const v = new Vue({
   }
 });
 
-declare const docs: boolean;
-
 (async () => {
   // hmmm
   if(dataBus.storeToken)
     dataBus.storeUser = await tinyApi.auth.getStoreUser();
 
-  if(docs && !location.hash) {
-    const [_, path, query] = location.href.match(/^(.+?)(\?.+)/);
-    location.href = path + '#' + query
-  }
 })().then(() => {
   console.log('Initialized Main!');
   v.loaded = true;
