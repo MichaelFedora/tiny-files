@@ -2,6 +2,9 @@
   "name": "tiny-files",
   "version": "1.0.0",
   "description": "A tiny file explorer for tiny apps",
+  "private": "true",
+  "repository": "github:MichaelFedora/tiny-files",
+  "homepage": "https://michaelfedora.github.io/tiny-files/#",
   "scripts": {
     "build": "del-cli build && webpack",
     "build-prod": "del-cli build && webpack --mode=production",
