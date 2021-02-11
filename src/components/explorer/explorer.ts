@@ -693,7 +693,20 @@ export default Vue.component('tiny-explorer', {
         return;
 
       if(event.ctrlKey) {
-        if(event.key === 'x' && this.anyActive) {
+        if(event.key === 'a') {
+          event.preventDefault();
+
+          const items = this.index[this.dir].files.map(a => a.name).concat(this.index[this.dir].folders.map(a => '/' + a.name));
+          const inactiveItem = Boolean(items.find(a => !this.active[a]));
+
+          if(inactiveItem)
+            for(const i of items)
+              this.$set(this.active, i, true);
+          else
+            for(const i of items)
+              this.$set(this.active, i, false);
+
+        } else if(event.key === 'x' && this.anyActive) {
           this.cutSelected();
           ToastProgrammatic.open({ message: 'cut selected', queue: false, position: 'is-bottom' });
         } else if(event.key === 'c' && this.anyActive) {
@@ -704,7 +717,7 @@ export default Vue.component('tiny-explorer', {
           ToastProgrammatic.open({ message: 'pasted clipboard', queue: false, position: 'is-bottom' });
         }
       } else if(event.shiftKey) {
-        if(event.key === 'N') {
+        if(event.key === 'A' || event.key === 'N') {
           event.preventDefault();
           this.newFolder();
           ToastProgrammatic.open({ message: 'new folder', queue: false, position: 'is-bottom' });
@@ -713,9 +726,9 @@ export default Vue.component('tiny-explorer', {
           event.preventDefault();
 
           let type: 'folder' | 'file', entry: EntryInfo;
-          if(this.lastActive.endsWith('/')) {
+          if(this.lastActive.startsWith('/')) {
             type = 'folder';
-            const name = this.lastActive.slice(0, -1);
+            const name = this.lastActive.slice(1);
             entry = this.index[this.dir].folders.find(a => a.name === name);
           } else {
             type = 'file';
@@ -727,6 +740,8 @@ export default Vue.component('tiny-explorer', {
 
         } else if(event.key === 'X' && this.anyActive) {
           this.removeSelected();
+        } else if(event.key === 'D' && this.anyActive) {
+          this.downloadSelected();
         } else if(event.key === 'S') {
           event.preventDefault();
           if(this.anyActive)
