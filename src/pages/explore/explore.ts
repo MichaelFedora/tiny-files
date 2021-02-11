@@ -48,6 +48,7 @@ export default Vue.component('tiny-explore', {
        .then(res => res.data.entries, e => { handleError(e); return [] });
 
       if(!this.rawPaths.length) {
+        console.warn('no paths!');
         this.paths = [];
         this.working = false;
         return;
@@ -57,7 +58,7 @@ export default Vue.component('tiny-explore', {
         .then(res => res.data, e => { handleError(e); return { } });
 
       if(Object.keys(entries).length !== this.rawPaths.length) {
-        console.log('some entries are missing!');
+        console.warn('some entries are missing!');
         this.rawPaths = Object.keys(entries);
       }
 
@@ -65,9 +66,8 @@ export default Vue.component('tiny-explore', {
 
       const pathData = [] as PathedFileInfo[];
       for(const path of this.rawPaths)
-        pathData.push(Object.assign({ }, entries[path.slice(publicRootLength)], { path: path.slice(this.rootPath.length) }));
-
-      // get root path and abstract
+        pathData.push(Object.assign({ name: path.slice(path.lastIndexOf('/') + 1), type: 'none', size: 0, modified: 0 },
+          entries[path.slice(publicRootLength)], { path: path.slice(this.rootPath.length) }));
 
       this.paths = pathData;
 

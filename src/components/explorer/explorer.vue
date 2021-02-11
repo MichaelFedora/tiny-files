@@ -101,7 +101,7 @@
         <b-icon icon='dots-horizontal' />
       </button>
       <b-dropdown-item aria-role='list-item' v-if='!viewOnly && dir.startsWith("/public")' @click='$emit("share", dir)'>share</b-dropdown-item>
-      <b-dropdown-item aria-role='list-item' @click='selectAll()'>select All</b-dropdown-item>
+      <b-dropdown-item aria-role='list-item' @click='selectAll()'>select all</b-dropdown-item>
       <b-dropdown-item aria-role='list-item' @click='downloadDir(dir)'>download</b-dropdown-item>
     </b-dropdown>
   </div>

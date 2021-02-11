@@ -151,6 +151,7 @@ export default Vue.component('tiny-explorer', {
   },
   async mounted() {
     window.addEventListener('mousedown', this.closeContextMenu);
+    window.addEventListener('resize', this.closeContextMenu);
     window.addEventListener('mouseup', this.drawEnd);
     window.addEventListener('mousemove', this.drawContinue);
     window.addEventListener('keydown', this.shortcutHandler);
@@ -313,9 +314,9 @@ export default Vue.component('tiny-explorer', {
             name: fileName,
             path: entry.path,
             rawSize: entry.size,
-            size: filesize(entry.size),
+            size: entry.size ? filesize(entry.size) : '--',
             rawLastModified: rawLastModified,
-            lastModified: this.formatDate(rawLastModified),
+            lastModified: rawLastModified ? this.formatDate(rawLastModified) : '--',
             contentType: entry.type,
             ...getFileIcon(entry.type)
           };
@@ -324,9 +325,9 @@ export default Vue.component('tiny-explorer', {
           // new file & newer modified & has size
         } if(oldestLatestModifiedDates[entry.path].latest < rawLastModified && entry.size > 0) {
           file.rawSize = entry.size;
-          file.size = filesize(entry.size);
+          file.size = entry.size ? filesize(entry.size) : '--';
           file.rawLastModified = rawLastModified;
-          file.lastModified = this.formatDate(rawLastModified);
+          file.lastModified = rawLastModified ? this.formatDate(rawLastModified) : '--';
           file.contentType = entry.type;
           const icon = getFileIcon(entry.type);
           file.fileIcon = icon.fileIcon;
@@ -368,15 +369,15 @@ export default Vue.component('tiny-explorer', {
           const fName = path.slice(idx + 1, -1);
           const folder = index[subPath].folders.find(a => a.name === fName);
           folder.rawSize = totalSize;
-          folder.size = filesize(totalSize);
+          folder.size = totalSize ? filesize(totalSize) : '--';
           folder.rawLastModified = lastModified;
-          folder.lastModified = this.formatDate(lastModified);
+          folder.lastModified = lastModified ? this.formatDate(lastModified) : '--';
           folder.itemCount = itemCount;
         } else {
           this.rootInfo.rawSize = totalSize;
-          this.rootInfo.size = filesize(totalSize);
+          this.rootInfo.size = totalSize ? filesize(totalSize) : '--';
           this.rootInfo.rawLastModified = lastModified;
-          this.rootInfo.lastModified = this.formatDate(lastModified);
+          this.rootInfo.lastModified = lastModified ? this.formatDate(lastModified) : '--';
           this.rootInfo.itemCount = itemCount;
         }
       }
@@ -793,43 +794,46 @@ export default Vue.component('tiny-explorer', {
       this.showContextMenu = false;
     },
     shortcutHandler(event: KeyboardEvent) {
-      if(this.viewOnly || document.querySelector('div.modal.is-active'))
+      if(document.querySelector('div.modal.is-active'))
         return;
 
       if(event.ctrlKey) {
         if(event.key === 'a') {
           event.preventDefault();
           this.selectAll();
-        } else if(event.key === 'x' && this.anyActive) {
-          this.cutSelected();
-          ToastProgrammatic.open({ message: 'cut selected', queue: false, position: 'is-bottom' });
-        } else if(event.key === 'c' && this.anyActive) {
-          this.copySelected();
-          ToastProgrammatic.open({ message: 'copy selected', queue: false, position: 'is-bottom' });
-        } else if(event.key === 'v' && this.clipboard.length) {
-          this.paste();
-          ToastProgrammatic.open({ message: 'pasted clipboard', queue: false, position: 'is-bottom' });
+        } else if(!this.viewOnly) {
+          if(event.key === 'x' && this.anyActive) {
+            this.cutSelected();
+            ToastProgrammatic.open({ message: 'cut selected', queue: false, position: 'is-bottom' });
+          } else if(event.key === 'c' && this.anyActive) {
+            this.copySelected();
+            ToastProgrammatic.open({ message: 'copy selected', queue: false, position: 'is-bottom' });
+          } else if(event.key === 'v' && this.clipboard.length) {
+            this.paste();
+            ToastProgrammatic.open({ message: 'pasted clipboard', queue: false, position: 'is-bottom' });
+          }
         }
       } else if(event.shiftKey) {
-        if(event.key === 'A' || event.key === 'N') {
-          event.preventDefault();
-          this.newFolder();
-          ToastProgrammatic.open({ message: 'new folder', queue: false, position: 'is-bottom' });
-
-        } else if(event.key === 'R' && this.lastActive) {
-          event.preventDefault();
-          this.renameSelected();
-        } else if(event.key === 'X' && this.anyActive) {
-          this.removeSelected();
-        } else if(event.key === 'D' && this.anyActive) {
+        if(event.key === 'D' && this.anyActive) {
           this.downloadSelected();
-        } else if(event.key === 'S') {
-          event.preventDefault();
-          if(this.anyActive)
-            this.shareSelected();
-          else
-            this.$emit('share', this.dir.slice(0, -1));
-          ToastProgrammatic.open({ message: 'share' + (this.anyActive ? ' selected' : ' dir'), queue: false, position: 'is-bottom' });
+        } else if(!this.viewOnly) {
+          if(event.key === 'A' || event.key === 'N') {
+            event.preventDefault();
+            this.newFolder();
+            ToastProgrammatic.open({ message: 'new folder', queue: false, position: 'is-bottom' });
+          } else if(event.key === 'R' && this.lastActive) {
+            event.preventDefault();
+            this.renameSelected();
+          } else if(event.key === 'X' && this.anyActive) {
+            this.removeSelected();
+          } else if(event.key === 'S') {
+            event.preventDefault();
+            if(this.anyActive)
+              this.shareSelected();
+            else
+              this.$emit('share', this.dir.slice(0, -1));
+            ToastProgrammatic.open({ message: 'share' + (this.anyActive ? ' selected' : ' dir'), queue: false, position: 'is-bottom' });
+          }
         }
       }
     },
