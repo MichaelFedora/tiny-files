@@ -3,7 +3,7 @@
   @dragover.prevent='throttledDragover()'>
   <header class='modal-card-head'>
     <p class='modal-card-title'>
-      <span>Upload Files&nbsp;</span><span style='font-size: 1rem'>- {{ uploadDir }}</span>
+      <span>upload files&nbsp;</span><span style='font-size: 1rem'>- {{ uploadDir }}</span>
     </p>
     <button type='button' class='delete' @click='$emit("close")' />
   </header>
@@ -17,7 +17,7 @@
         </div>
         <div class='file-entry' :key='"file-" + fileList.length' style='margin-top: 0.5rem'>
           <b-icon icon='file-multiple has-text-info' title='' />
-          <span style='font-style: italic; opacity: 0.5'>Drop files here, or click the button below to upload</span>
+          <span style='font-style: italic; opacity: 0.5'>drop files here, or click the button below to upload</span>
           <span></span>
         </div>
       </div>
@@ -30,7 +30,7 @@
         <section class='section'>
           <div class='content has-text-centered'>
             <p><b-icon icon='upload' size='is-large' /></p>
-            <p>Drop your files here or click to upload</p>
+            <p>drop your files here or click to upload</p>
           </div>
         </section>
       </b-upload>
@@ -41,7 +41,7 @@
       <b-upload v-model='localFiles' multiple>
         <span class='file-cta'>
           <b-icon class='file-icon' icon='upload' />
-          <span class='file-label'>Upload files</span>
+          <span class='file-label'>upload files</span>
         </span>
       </b-upload>
     </b-field>

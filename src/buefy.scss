@@ -96,15 +96,19 @@ a:disabled, a.disabled {
 }
 
 .dropdown.is-mobile-modal > .dropdown-menu {
-  box-shadow: 0 0 2px 1px rgba(121, 88, 213, 0.5);
-  background: #363636;
+  /*box-shadow: 0 0 2px 1px rgba(121, 88, 213, 0.5);
+  background: $black-ter;
   border-radius: 4px;
-  margin-top: 0.33em;
+  margin-top: 0.33em;*/
 }
 
 .dropdown-content {
-  border-radius: 0;
-  box-shadow: none;
+  // border-radius: 0;
+  background: $black-ter;
+  // box-shadow: none;
+  > hr {
+    margin: 0.25rem;
+  }
 }
 
 .dropdown .background {

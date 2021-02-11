@@ -25,7 +25,7 @@
           class='button is-small is-dark'
           :class='{ "has-text-warning": clipboard.length && cut }'
           :disabled='!anyActive || working'
-          title='Cut'
+          title='cut'
           @click='cutSelected()'
         >
           <b-icon icon='content-cut' />
@@ -34,7 +34,7 @@
           class='button is-small is-dark'
           :class='{ "has-text-info": clipboard.length && !cut }'
           :disabled='!anyActive || working'
-          title='Copy'
+          title='copy'
           @click='copySelected()'
         >
           <b-icon icon='content-copy' />
@@ -46,7 +46,7 @@
             "has-text-info": clipboard.length && !cut
           }'
           :disabled='working || clipboard.length < 1'
-          :title='clipboard.length ? "Paste (" + clipboard.length + ")" : "Paste"'
+          :title='clipboard.length ? "paste (" + clipboard.length + ")" : "paste"'
           @click='paste()'
         >
           <b-icon icon='content-paste' />
@@ -54,18 +54,18 @@
         <button
           class='button is-small is-dark'
           :disabled='working || clipboard.length < 1'
-          title='Clear'
+          title='clear'
           @click='clearClipboard()'
         >
           <b-icon icon='backspace-outline' />
         </button>
         <hr>
-        <button class='button is-small is-dark' :disabled='!anyActive || working' title='Delete' @click='removeSelected()'>
+        <button class='button is-small is-dark' :disabled='!anyActive || working' title='delete' @click='removeSelected()'>
           <b-icon icon='delete-forever' />
         </button>
         <hr>
         <template v-if='dir.startsWith("/public")'>
-          <button class='button is-small is-dark' :disabled='!anyActive || working' title='Share' @click='shareSelected()'>
+          <button class='button is-small is-dark' :disabled='!anyActive || working' title='share' @click='shareSelected()'>
             <b-icon icon='share' />
           </button>
           <hr>
@@ -85,30 +85,31 @@
     </button>
     <span v-else></span>
     <button class='button is-dark' @click='sort("name")'>
-      <span>Name</span>
+      <span>name</span>
       <b-icon v-show='sortByName === "name"' :icon='sortByDir ? "chevron-up" : "chevron-down"' />
     </button>
     <button class='button is-dark' @click='sort("size")'>
-      <span>Size</span>
+      <span>size</span>
       <b-icon v-show='sortByName === "size"' :icon='sortByDir ? "chevron-up" : "chevron-down"' />
     </button>
     <button class='button is-dark' @click='sort("mod")'>
-      <span>Last Modified</span>
+      <span>last modified</span>
       <b-icon v-show='sortByName === "mod"' :icon='sortByDir ? "chevron-up" : "chevron-down"' />
     </button>
     <b-dropdown aria-role='list' position='is-bottom-left'>
       <button slot='trigger' class='dot-button hover-primary'>
         <b-icon icon='dots-horizontal' />
       </button>
-      <b-dropdown-item aria-role='list-item' v-if='!viewOnly && dir.startsWith("/public")' @click='$emit("share", dir)'>Share</b-dropdown-item>
-      <b-dropdown-item aria-role='list-item' @click='downloadDir(dir)'>Download</b-dropdown-item>
+      <b-dropdown-item aria-role='list-item' v-if='!viewOnly && dir.startsWith("/public")' @click='$emit("share", dir)'>share</b-dropdown-item>
+      <b-dropdown-item aria-role='list-item' @click='selectAll()'>select All</b-dropdown-item>
+      <b-dropdown-item aria-role='list-item' @click='downloadDir(dir)'>download</b-dropdown-item>
     </b-dropdown>
   </div>
   <div id='explorer' ref='explorer'>
-    <div id='background' @mousedown='$event => { drawStart($event); showContextMenu = false; }'
-      @contextmenu.prevent='contextMenu'>
+    <div id='background' @mousedown='drawStart'
+      @contextmenu='contextMenu($event)'>
       <h5 v-if='!index || !index[dir] || (index[dir].folders.length === 0 && index[dir].files.length === 0)' class='subtitle is-5'>
-        Nothing here...
+        nothing here...
       </h5>
     </div>
     <template v-if='index && index[dir]'>
@@ -125,11 +126,12 @@
           :class='{ active: active["/" + folder.name], "last-active": lastActive === "/" + folder.name }'
           :href='href'
           @click.prevent.stop='clickItem($event, folder, true)'
-          draggable
-          @drop.prevent='folderDrop($event, folder)'
-          @dragover.prevent='dragOver'
+          :draggable='!viewOnly'
+          @drop='folderDrop($event, folder)'
+          @dragover='dragOver'
           @dragstart='folderDragStart($event, folder)'
           @dragend='dragEnd'
+          @contextmenu='contextMenu($event, "folder", folder)'
         >
           <b-icon
             :icon='folder.itemCount < 0 ? "folder-alert" : folder.path.startsWith("/public") ? "folder-search" : "folder"'
@@ -145,14 +147,16 @@
             <button slot='trigger' class='dot-button'>
               <b-icon icon='dots-horizontal' />
             </button>
-            <b-dropdown-item aria-role='list-item' @click='downloadDir(folder.path + "/")'>Download</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='downloadDir(folder.path + "/")'>download</b-dropdown-item>
             <template v-if='!viewOnly'>
-              <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>Cut</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>Copy</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>Paste Into</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' v-if='folder.path.startsWith("/public")' @click='$emit("share", folder.path)'>Share</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>Delete</b-dropdown-item>
-              <b-dropdown-item aria-role='list-item' @click='rename("folder", folder)'>Rename</b-dropdown-item>
+              <hr>
+              <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>cut</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>copy</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>paste into</b-dropdown-item>
+              <hr>
+              <b-dropdown-item aria-role='list-item' v-if='folder.path.startsWith("/public")' @click='$emit("share", folder.path)'>share</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>delete</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='rename("folder", folder)'>rename</b-dropdown-item>
             </template>
           </b-dropdown>
         </a>
@@ -165,11 +169,12 @@
         :class='{ active: active[file.name], "last-active": lastActive === file.name }'
         class='file exp-grid'
         @click.prevent.stop='clickItem($event, file)'
-        draggable
-        @drop.prevent='nullEvent'
-        @dragover.prevent='nullEvent'
+        :draggable='!viewOnly'
+        @drop='nullEvent'
+        @dragover='nullEvent'
         @dragstart='fileDragStart($event, file)'
         @dragend='dragEnd'
+        @contextmenu='contextMenu($event, "file", file)'
       >
         <b-icon :icon='file.fileIcon' :style='{ color: file.fileIconColor }' :title='file.contentType' />
         <div style='padding-left: 1em'>
@@ -181,13 +186,15 @@
           <button slot='trigger' class='dot-button'>
             <b-icon icon='dots-horizontal' />
           </button>
-          <b-dropdown-item aria-role='list-item' @click='openFile(file.path)'>Open</b-dropdown-item>
+          <b-dropdown-item aria-role='list-item' @click='openFile(file.path)'>open</b-dropdown-item>
           <template v-if='!viewOnly'>
-            <b-dropdown-item aria-role='list-item' @click='cutItem("file", file.path)'>Cut</b-dropdown-item>
-            <b-dropdown-item aria-role='list-item' @click='copyItem("file", file.path)'>Copy</b-dropdown-item>
-            <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", file.path)'>Share</b-dropdown-item>
-            <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "file", path: file.path })'>Delete</b-dropdown-item>
-            <b-dropdown-item aria-role='list-item' @click='rename("file", file)'>Rename</b-dropdown-item>
+            <hr>
+            <b-dropdown-item aria-role='list-item' @click='cutItem("file", file.path)'>cut</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='copyItem("file", file.path)'>copy</b-dropdown-item>
+            <hr>
+            <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", file.path)'>share</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "file", path: file.path })'>delete</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='rename("file", file)'>rename</b-dropdown-item>
           </template>
         </b-dropdown>
       </a>
@@ -215,9 +222,27 @@
       :style='{ top: drawPoints.y2 + "px", left: drawPoints.x2 + "px" }'
     ></div -->
   </div>
-  <!-- div id='context-menu' v-if='showContextMenu' ref='contextmenu'>
-    hello ^^
-  </div -->
+  <div
+    v-show='showContextMenu'
+    id='context-menu'
+    class='dropdown-content'
+    aria-role='list'
+    ref='contextmenu'
+    @mousedown.stop=''
+    @mouseup='closeContextMenu()'
+  >
+    <button class='dropdown-item' aria-role='list-item' @click='contextItem ? downloadSelected() : downloadDir()'>download {{!contextItem ? ' directory' : contextItemType }}</button>
+    <template v-if='!viewOnly'>
+      <button class='dropdown-item' aria-role='list-item' @click='cutSelected()' :disabled='!contextItem && !anyActive'>cut</button>
+      <button class='dropdown-item' aria-role='list-item' @click='copySelected()' :disabled='!contextItem && !anyActive'>copy</button>
+      <button class='dropdown-item' aria-role='list-item' v-if='!contextItemType' @click='paste()' :disabled='!clipboard.length'>paste</button>
+      <button class='dropdown-item' aria-role='list-item' v-else-if='contextItemType === "folder"' @click='pasteInto(contextItem.path)' :disabled='!clipboard.length'>paste into</button>
+      <hr>
+      <button class='dropdown-item' aria-role='list-item' v-if='dir.startsWith("/public")' @click='anyActive ? shareSelected() : $emit("share", dir)'>share {{ !anyActive ? ' directory' : '' }}</button>
+      <button class='dropdown-item' aria-role='list-item' @click='removeSelected()' :disabled='!anyActive'>delete</button>
+      <button class='dropdown-item' aria-role='list-item' v-show='contextItemType && contextItem' @click='() => rename(contextItemType, contextItem)'>rename</button>
+    </template>
+  </div>
 </div>
 </template>
 <script src='./explorer.ts'></script>
@@ -247,6 +272,22 @@
 
   div#context-menu {
     position: fixed;
+    button {
+      border: none;
+      cursor: pointer;
+      &:not(:hover) {
+        background: inherit;
+      }
+    }
+    > a.is-disabled, button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      pointer-events: disabled;
+      &:hover {
+        background: inherit;
+        color: inherit;
+      }
+    }
   }
 
   .exp-grid,

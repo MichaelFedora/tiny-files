@@ -215,10 +215,10 @@ export default Vue.component('tiny-browse', {
         link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
 
       DialogProgrammatic.prompt({
-        title: 'Share Item(s)',
-        message: 'Here is the link to share:',
+        title: 'share item(s)',
+        message: 'here is the link to share:',
         inputAttrs: { readonly: true, value: link },
-        confirmText: 'Got it'
+        confirmText: 'okay'
       });
 
       this.working = false;

@@ -26,7 +26,7 @@
         <section class='section'>
           <div class='content has-text-centered'>
             <p><b-icon icon='upload' size='is-large' /></p>
-            <p>Drop your files here or click to upload (or <a @click.prevent='dragging = false'>cancel</a>)</p>
+            <p>drop your files here or click to upload (or <a @click.prevent='dragging = false'>cancel</a>)</p>
           </div>
         </section>
       </b-upload>

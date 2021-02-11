@@ -1,7 +1,7 @@
 import axios from 'axios';
 import dataBus from 'services/data-bus';
 import tinyApi from 'services/tiny-api';
-import { PathedFileInfo } from 'types';
+import { FileListAdvance, PathedFileInfo } from 'types';
 import { computeShortestPath, handleError } from '../../util';
 import Vue from 'vue';
 
@@ -53,13 +53,12 @@ export default Vue.component('tiny-explore', {
         return;
       }
 
-      const entries = await axios.post(`${this.store}/public-info/${this.user}`, this.rawPaths.map(p => p.slice(publicRootLength)))
+      const entries = await axios.post<FileListAdvance['entries']>(`${this.store}/public-info/${this.user}`, this.rawPaths.map(p => p.slice(publicRootLength)))
         .then(res => res.data, e => { handleError(e); return { } });
 
       if(Object.keys(entries).length !== this.rawPaths.length) {
-        this.paths = [];
-        this.working = false;
-        return;
+        console.log('some entries are missing!');
+        this.rawPaths = Object.keys(entries);
       }
 
       this.rootPath = computeShortestPath(this.rawPaths);

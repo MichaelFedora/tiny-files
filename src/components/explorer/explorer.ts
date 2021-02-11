@@ -69,6 +69,8 @@ export default Vue.component('tiny-explorer', {
 
       // context menu
       showContextMenu: false,
+      contextItemType: '',
+      contextItem: null as EntryInfo,
 
       // selection
       lastActive: '',
@@ -148,6 +150,7 @@ export default Vue.component('tiny-explorer', {
     }
   },
   async mounted() {
+    window.addEventListener('mousedown', this.closeContextMenu);
     window.addEventListener('mouseup', this.drawEnd);
     window.addEventListener('mousemove', this.drawContinue);
     window.addEventListener('keydown', this.shortcutHandler);
@@ -160,6 +163,8 @@ export default Vue.component('tiny-explorer', {
       this.$router.replace({ path: this.rootRoute, query: this.$route.query });
   },
   destroyed() {
+    window.removeEventListener('mousedown', this.closeContextMenu);
+    window.removeEventListener('resize', this.closeContextMenu);
     window.removeEventListener('mouseup', this.drawEnd);
     window.removeEventListener('mousemove', this.drawContinue);
     window.removeEventListener('keydown', this.shortcutHandler);
@@ -395,7 +400,7 @@ export default Vue.component('tiny-explorer', {
         this.lastActiveTime = 0;
         return; // no 'lastActive' whatnot
       } else if(event.getModifierState('Control') || event.ctrlKey) {
-        this.active[name] = !this.active[name];
+        this.$set(this.active, name, !this.active[name]);
         this.lastActiveTime = 0;
       } else {
         this.active = { [name]: true };
@@ -424,6 +429,17 @@ export default Vue.component('tiny-explorer', {
       }
 
       return { items, paths: entries.map(a => a.path) };
+    },
+    selectAll() {
+      const items = this.index[this.dir].files.map(a => a.name).concat(this.index[this.dir].folders.map(a => '/' + a.name));
+      const inactiveItem = Boolean(items.find(a => !this.active[a]));
+
+      if(inactiveItem)
+        for(const i of items)
+          this.$set(this.active, i, true);
+      else
+        for(const i of items)
+          this.$set(this.active, i, false);
     },
     cutItem(type: 'file' | 'folder', path: string) {
       this.cut = true;
@@ -471,8 +487,8 @@ export default Vue.component('tiny-explorer', {
       const selected = this.getSelected().paths;
       if(!await new Promise<boolean>(res => DialogProgrammatic.confirm({
         type: 'is-danger',
-        title: 'Delete Selected Items',
-        message: 'Are you sure you want to delete the ' + selected.length + ' selected item(s)?',
+        title: 'delete selected',
+        message: 'are you sure you want to delete the ' + selected.length + ' selected item(s)?',
         onConfirm: () => res(true),
         onCancel: () => res(false)
       }))) return;
@@ -481,6 +497,20 @@ export default Vue.component('tiny-explorer', {
     },
     shareSelected() {
       this.$emit('share', this.getSelected().paths)
+    },
+    renameSelected() {
+      let type: 'folder' | 'file', entry: EntryInfo;
+      if(this.lastActive.startsWith('/')) {
+        type = 'folder';
+        const name = this.lastActive.slice(1);
+        entry = this.index[this.dir].folders.find(a => a.name === name);
+      } else {
+        type = 'file';
+        entry = this.index[this.dir].files.find(a => a.name === this.lastActive);
+      }
+
+      if(entry)
+        this.rename(type, entry);
     },
     openFolder(folder: string) {
       if(this.dir)
@@ -640,31 +670,62 @@ export default Vue.component('tiny-explorer', {
         Vue.set(this.active, i, true);
     },
     fileDragStart(event: DragEvent, file: EntryInfo) {
+      if(this.viewOnly) return;
       this.$emit('dragging', true);
       event.dataTransfer.setData('text/plain', file.path);
-      this.active[file.name] = true;
+
+      if(this.active[file.name] !== true) {
+        if(this.anyActive)
+          for(const item in this.active)
+            this.$set(this.active, item, false);
+        this.$set(this.active, file.name, true);
+      }
+      this.lastActive = file.name;
+      this.lastActiveTime = Date.now();
+
       event.dataTransfer.effectAllowed = 'move';
-      (event.target as HTMLElement).style.cursor = 'move';
+      // (event.target as HTMLElement).style.cursor = 'move';
       (event.target as HTMLElement).style.opacity = '0.5';
     },
     folderDragStart(event: DragEvent, folder: EntryInfo) {
+      if(this.viewOnly) return;
       this.$emit('dragging', true);
       event.dataTransfer.setData('text/plain', folder.path);
       event.dataTransfer.effectAllowed = 'move';
-      this.active[folder.name + '/'] = true;
-      (event.target as HTMLElement).style.cursor = 'move';
+
+      if(this.active['/' + folder.name] !== true) {
+        if(this.anyActive)
+          for(const item in this.active)
+            this.$set(this.active, item, false);
+        this.$set(this.active, '/' + folder.name, true);
+      }
+      this.lastActive = '/' + folder.name;
+      this.lastActiveTime = Date.now();
+
+      // (event.target as HTMLElement).style.cursor = 'move';
       (event.target as HTMLElement).style.opacity = '0.5';
     },
     dragEnd(event: DragEvent) {
-      (event.target as HTMLElement).style.cursor = 'default';
+      if(this.viewOnly) return;
+      // (event.target as HTMLElement).style.cursor = 'default';
       (event.target as HTMLElement).style.opacity = '';
       this.$nextTick(() => this.$emit('draggingEnd', true));
     },
     dragOver(event: DragEvent) {
+      if(this.viewOnly) return;
+      event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
     },
-    nullEvent(event: DragEvent) { event.dataTransfer.dropEffect = 'none'; },
+    nullEvent(event: DragEvent) {
+      if(this.viewOnly) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'none';
+    },
     folderDrop(event: DragEvent, folder: EntryInfo) {
+      if(this.viewOnly) return;
+      event.preventDefault();
+
+
       let paths: string[];
       let from = '';
       if(!this.anyActive) {
@@ -679,14 +740,57 @@ export default Vue.component('tiny-explorer', {
         from = this.dir.slice(0, -1);
       }
 
+      if(paths.find(a => a.startsWith(folder.path)))
+        return;
+
       if(from === folder.path)
         return;
       // move
       this.$emit(event.ctrlKey ? 'copy' : 'move', { from, paths, to: folder.path });
     },
-    contextMenu(event: MouseEvent) {
-      console.log('contextmenu!', event);
+    contextMenu(event: MouseEvent, type?: 'file' | 'folder', item?: EntryInfo) {
+      event.preventDefault();
+
+      if(type && item) {
+        this.lastActiveTime = Date.now();
+        this.lastActive = (type === 'folder' ? '/' : '') + item.name;
+        if(!this.active[this.lastActive])
+          for(const name in this.active) this.$set(this.active, name, false);
+        this.$set(this.active, this.lastActive, true);
+
+        this.contextItem = item;
+        this.contextItemType = type;
+
+      } else {
+        this.contextItemType = '';
+        this.contextItem = null;
+      }
+
+      const elem = this.$refs['contextmenu'] as HTMLDivElement;
+
       this.showContextMenu = true;
+
+      this.$nextTick(() => {
+        if(event.clientX + elem.offsetWidth > window.innerWidth) {
+          elem.style.right = (window.innerWidth - event.clientX) + 'px';
+          elem.style.left = '';
+        } else {
+          elem.style.left = event.clientX + 'px';
+          elem.style.right = '';
+        }
+
+        if(event.clientY + elem.offsetHeight > window.innerHeight) {
+          elem.style.bottom = (window.innerHeight - event.clientY) + 'px';
+          elem.style.top = '';
+        } else {
+          elem.style.top = event.clientY + 'px';
+          elem.style.bottom = '';
+        }
+      });
+    },
+    closeContextMenu() {
+      if(!this.showContextMenu) return;
+      this.showContextMenu = false;
     },
     shortcutHandler(event: KeyboardEvent) {
       if(this.viewOnly || document.querySelector('div.modal.is-active'))
@@ -695,17 +799,7 @@ export default Vue.component('tiny-explorer', {
       if(event.ctrlKey) {
         if(event.key === 'a') {
           event.preventDefault();
-
-          const items = this.index[this.dir].files.map(a => a.name).concat(this.index[this.dir].folders.map(a => '/' + a.name));
-          const inactiveItem = Boolean(items.find(a => !this.active[a]));
-
-          if(inactiveItem)
-            for(const i of items)
-              this.$set(this.active, i, true);
-          else
-            for(const i of items)
-              this.$set(this.active, i, false);
-
+          this.selectAll();
         } else if(event.key === 'x' && this.anyActive) {
           this.cutSelected();
           ToastProgrammatic.open({ message: 'cut selected', queue: false, position: 'is-bottom' });
@@ -724,20 +818,7 @@ export default Vue.component('tiny-explorer', {
 
         } else if(event.key === 'R' && this.lastActive) {
           event.preventDefault();
-
-          let type: 'folder' | 'file', entry: EntryInfo;
-          if(this.lastActive.startsWith('/')) {
-            type = 'folder';
-            const name = this.lastActive.slice(1);
-            entry = this.index[this.dir].folders.find(a => a.name === name);
-          } else {
-            type = 'file';
-            entry = this.index[this.dir].files.find(a => a.name === this.lastActive);
-          }
-
-          if(entry)
-            this.rename(type, entry);
-
+          this.renameSelected();
         } else if(event.key === 'X' && this.anyActive) {
           this.removeSelected();
         } else if(event.key === 'D' && this.anyActive) {
