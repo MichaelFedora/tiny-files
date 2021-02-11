@@ -3,6 +3,9 @@ import dataBus from './data-bus';
 import { handleError } from '../util';
 import { FileListAdvance } from 'types';
 
+declare const docs: boolean;
+const siteOrigin = docs ? location.origin + '/tiny-files/#' : location.origin
+
 class TinyApi {
 
   private _auth = Object.freeze({
@@ -13,14 +16,13 @@ class TinyApi {
         origin = spleet[1];
         username = spleet[0];
       }
-
       const protocol = /^localhost:/.test(origin) ? 'http:' : location.protocol;
       dataBus.homeUrl = protocol + '//' + origin;
       dataBus.storeScopes = personal ? [dataBus.privateScope, dataBus.publicScope] : ['/']
 
       location.href = dataBus.homeUrl + '/auth/handshake/start'
         + '?app=tiny-files'
-        + '&redirect=' + location.origin + '/login'
+        + '&redirect=' + siteOrigin + '/login'
         + '&scopes=home,store,db'
         + (personal ? `&fileScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]` : '&fileScopes=["/"]')
         + (username ? '&username=' + username : '');
@@ -33,7 +35,7 @@ class TinyApi {
         db: { type: 'tiny', url: string, token: string }
       }>(origin + '/auth/token', {
         app: 'tiny-files',
-        redirect: location.origin + '/login',
+        redirect: siteOrigin + '/login',
         scopes: 'home,store,db',
         code,
         secret: 'keyboardcat'
