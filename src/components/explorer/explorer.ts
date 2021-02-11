@@ -67,6 +67,9 @@ export default Vue.component('tiny-explorer', {
       sortByName: 'name',
       sortByDir: false,
 
+      // context menu
+      showContextMenu: false,
+
       // selection
       lastActive: '',
       lastActiveTime: 0,
@@ -212,20 +215,49 @@ export default Vue.component('tiny-explorer', {
     },
     newFolder() {
       DialogProgrammatic.prompt({
-        title: 'New Folder Name',
+        title: 'new folder name',
         message: '',
+        inputAttrs: { pattern: '(?:(?:[\\.][ \\.]*)?[\\w\\-](?:[\\w\\- \\.]*[\\w\\-]+)?\\/?)+' },
+        cancelText: 'cancel',
+        confirmText: 'create',
         onConfirm: res => {
-          this.$set(this.index, this.dir + res + '/', { files: [], folders: [] });
-          this.index[this.dir].folders.push({
-            name: res,
-            path: this.dir + res,
-            lastModified: '--',
-            rawLastModified: 0,
-            rawSize: 0,
-            size: '--',
-            itemCount: -1
-          });
-          this.$forceUpdate();
+          if(!res || !/^(?:(?:[\.][\ \.]*)?[\w\-](?:[\w\-\ \.]*[\w\-]+)?\/?)+$/.test(res)) return;
+
+          const paths = res.split('/').filter(a => Boolean(a));
+          for(let i = 0; i < paths.length; i++) {
+            const parentPath = this.dir + (i > 0 ? paths.slice(0, i).join('/') + '/' : '');
+            this.$set(this.index, parentPath + paths[i] + '/', { files: [], folders: [] });
+            this.index[parentPath].folders.push({
+              name: paths[i],
+              path: parentPath + paths[i] + '/',
+              lastModified: '--',
+              rawLastModified: 0,
+              rawSize: 0,
+              size: '--',
+              itemCount: -1
+            });
+            this.$forceUpdate();
+          }
+        }
+      });
+    },
+    rename(type: 'file' | 'folder', item: EntryInfo) {
+      DialogProgrammatic.prompt({
+        title: 'rename ' + type + ' "' + item.name + '"',
+        message: '',
+        inputAttrs: { pattern: '(?:[\\.][ \\.]*)?[\\w\\-](?:[\\w\\- \\.]*[\\w\\-]+)?' },
+        cancelText: 'cancel',
+        confirmText: 'rename',
+        onConfirm: res => {
+          if(!res || !/^(?:[\.][\ \.]*)?[\w\-](?:[\w\-\ \.]*[\w\-]+)?$/.test(res))
+            return;
+
+          const path = type === 'file' ? item.path.slice(0, item.path.lastIndexOf('/')) : item.path;
+
+          if(type === 'file')
+            this.$emit('move', { from: item.path, paths: [item.path], to: path + '/' + res });
+          else
+            this.$emit('move', { from: path, paths: this.paths.filter(a => a.path.startsWith(path)).map(a => a.path), to: path.slice(0, path.lastIndexOf('/'))+ '/' + res })
         }
       });
     },
@@ -610,6 +642,7 @@ export default Vue.component('tiny-explorer', {
     fileDragStart(event: DragEvent, file: EntryInfo) {
       this.$emit('dragging', true);
       event.dataTransfer.setData('text/plain', file.path);
+      this.active[file.name] = true;
       event.dataTransfer.effectAllowed = 'move';
       (event.target as HTMLElement).style.cursor = 'move';
       (event.target as HTMLElement).style.opacity = '0.5';
@@ -618,6 +651,7 @@ export default Vue.component('tiny-explorer', {
       this.$emit('dragging', true);
       event.dataTransfer.setData('text/plain', folder.path);
       event.dataTransfer.effectAllowed = 'move';
+      this.active[folder.name + '/'] = true;
       (event.target as HTMLElement).style.cursor = 'move';
       (event.target as HTMLElement).style.opacity = '0.5';
     },
@@ -650,6 +684,10 @@ export default Vue.component('tiny-explorer', {
       // move
       this.$emit(event.ctrlKey ? 'copy' : 'move', { from, paths, to: folder.path });
     },
+    contextMenu(event: MouseEvent) {
+      console.log('contextmenu!', event);
+      this.showContextMenu = true;
+    },
     shortcutHandler(event: KeyboardEvent) {
       if(this.viewOnly || document.querySelector('div.modal.is-active'))
         return;
@@ -670,6 +708,25 @@ export default Vue.component('tiny-explorer', {
           event.preventDefault();
           this.newFolder();
           ToastProgrammatic.open({ message: 'new folder', queue: false, position: 'is-bottom' });
+
+        } else if(event.key === 'R' && this.lastActive) {
+          event.preventDefault();
+
+          let type: 'folder' | 'file', entry: EntryInfo;
+          if(this.lastActive.endsWith('/')) {
+            type = 'folder';
+            const name = this.lastActive.slice(0, -1);
+            entry = this.index[this.dir].folders.find(a => a.name === name);
+          } else {
+            type = 'file';
+            entry = this.index[this.dir].files.find(a => a.name === this.lastActive);
+          }
+
+          if(entry)
+            this.rename(type, entry);
+
+        } else if(event.key === 'X' && this.anyActive) {
+          this.removeSelected();
         } else if(event.key === 'S') {
           event.preventDefault();
           if(this.anyActive)

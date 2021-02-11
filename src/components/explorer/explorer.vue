@@ -105,7 +105,8 @@
     </b-dropdown>
   </div>
   <div id='explorer' ref='explorer'>
-    <div id='background' @mousedown='drawStart($event)'>
+    <div id='background' @mousedown='$event => { drawStart($event); showContextMenu = false; }'
+      @contextmenu.prevent='contextMenu'>
       <h5 v-if='!index || !index[dir] || (index[dir].folders.length === 0 && index[dir].files.length === 0)' class='subtitle is-5'>
         Nothing here...
       </h5>
@@ -144,13 +145,14 @@
             <button slot='trigger' class='dot-button'>
               <b-icon icon='dots-horizontal' />
             </button>
-            <b-dropdown-item aria-role='list-item' @click='downloadDir(dir + folder.name + "/")'>Download</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='downloadDir(folder.path + "/")'>Download</b-dropdown-item>
             <template v-if='!viewOnly'>
               <b-dropdown-item aria-role='list-item' @click='cutItem("folder", folder.path)'>Cut</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='copyItem("folder", folder.path)'>Copy</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='pasteInto(folder.path)' :disabled='!clipboard.length'>Paste Into</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' v-if='folder.path.startsWith("/public")' @click='$emit("share", folder.path)'>Share</b-dropdown-item>
               <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "folder", path: folder.path })'>Delete</b-dropdown-item>
+              <b-dropdown-item aria-role='list-item' @click='rename("folder", folder)'>Rename</b-dropdown-item>
             </template>
           </b-dropdown>
         </a>
@@ -185,6 +187,7 @@
             <b-dropdown-item aria-role='list-item' @click='copyItem("file", file.path)'>Copy</b-dropdown-item>
             <b-dropdown-item aria-role='list-item' v-if='dir.startsWith("/public")' @click='$emit("share", file.path)'>Share</b-dropdown-item>
             <b-dropdown-item aria-role='list-item' @click='$emit("delete", { type: "file", path: file.path })'>Delete</b-dropdown-item>
+            <b-dropdown-item aria-role='list-item' @click='rename("file", file)'>Rename</b-dropdown-item>
           </template>
         </b-dropdown>
       </a>
@@ -212,6 +215,9 @@
       :style='{ top: drawPoints.y2 + "px", left: drawPoints.x2 + "px" }'
     ></div -->
   </div>
+  <!-- div id='context-menu' v-if='showContextMenu' ref='contextmenu'>
+    hello ^^
+  </div -->
 </div>
 </template>
 <script src='./explorer.ts'></script>
@@ -237,6 +243,10 @@
     cursor: pointer;
     color: inherit;
     height: 100%;
+  }
+
+  div#context-menu {
+    position: fixed;
   }
 
   .exp-grid,
