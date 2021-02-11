@@ -228,6 +228,7 @@ export default Vue.component('tiny-browse', {
     upload(files?: File[]) {
       ModalProgrammatic.open({
         component: UploadModal,
+        hasModalCard: true,
         props: { files, familiar: this.familiarLayout && this.personal, dir: this.dir },
         onCancel: () => this.refresh(),
         events: { close: changed => changed ? this.refresh() : null }

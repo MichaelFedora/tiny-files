@@ -247,16 +247,27 @@ export default Vue.component('tiny-explorer', {
         }
       });
     },
-    rename(type: 'file' | 'folder', item: EntryInfo) {
+    rename(type: 'file' | 'folder', item: EntryInfo, value?: string) {
       DialogProgrammatic.prompt({
         title: 'rename ' + type + ' "' + item.name + '"',
         message: '',
-        inputAttrs: { pattern: '(?:[\\.][ \\.]*)?[\\w\\-](?:[\\w\\- \\.]*[\\w\\-]+)?' },
+        inputAttrs: { pattern: '(?:[\\.][ \\.]*)?[\\w\\-](?:[\\w\\- \\.]*[\\w\\-]+)?', value: value || item.name },
         cancelText: 'cancel',
         confirmText: 'rename',
         onConfirm: res => {
-          if(!res || !/^(?:[\.][\ \.]*)?[\w\-](?:[\w\-\ \.]*[\w\-]+)?$/.test(res))
+          if(!res || !/^(?:[\.][\ \.]*)?[\w\-](?:[\w\-\ \.]*[\w\-]+)?$/.test(res) || res === item.name)
             return;
+
+          if(this.index[this.dir].files.find(a => a.name === res) ||
+            this.index[this.dir].folders.find(a => a.name === res)) {
+            DialogProgrammatic.alert({
+              message: 'name already taken',
+              confirmText: 'okay',
+              // alert closes on enter-down, input enters on enter-up, so it doesn't work
+              // onConfirm: () => this.rename(type, item, res)
+            });
+            return;
+          }
 
           const path = type === 'file' ? item.path.slice(0, item.path.lastIndexOf('/')) : item.path;
 
