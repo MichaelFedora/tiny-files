@@ -218,6 +218,7 @@ export default Vue.component('tiny-browse', {
         title: 'share item(s)',
         message: 'here is the link to share:',
         inputAttrs: { readonly: true, value: link },
+        cancelText: 'cancel',
         confirmText: 'okay'
       });
 

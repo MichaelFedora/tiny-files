@@ -3,7 +3,7 @@
   <h1>login</h1>
   <div class='form'>
     <b-field>
-      <b-input placeholder='username@tinyhome.site' pattern='\w+@.+' v-model='origin' icon-right='account' @keyup.native.enter='login()' />
+      <b-input placeholder='username@tinyhome.site' pattern='\w+@.+' v-model='origin' icon-right='account' @keyup.native.enter='login()' :disabled='working' />
     </b-field>
   </div>
   <div id='buttons'>
