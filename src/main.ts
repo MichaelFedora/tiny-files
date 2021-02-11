@@ -35,9 +35,12 @@ Vue.use(Dropdown);
 Vue.use(Upload);
 
 declare const docs: boolean;
-if(docs && !location.hash) {
-  const [_, path, query] = location.href.match(/^(.+?)(\?.+)/);
-  location.href = path + '#' + query
+if(docs) {
+  const [_, path, query, hash] = location.href.match(/^(.+?)(\?.+?)(#.+)?$/);
+  if(!hash)
+    location.href = path + '#' + query;
+  else
+    location.href = path + hash + (!hash.includes('?') ? query : '&' + query.slice(1));
 }
 
 const v = new Vue({
