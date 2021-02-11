@@ -45,7 +45,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if(!dataBus.homeToken && !/^\/(login|explore)/.test(to.path))
-    next('/login?goto=' + to.fullPath);
+    next({ path: '/login', query: Object.assign({ goto: to.path }, to.query) });
 
   next();
 });

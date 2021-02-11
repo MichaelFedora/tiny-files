@@ -4,7 +4,7 @@ import { handleError } from '../util';
 import { FileListAdvance } from 'types';
 
 declare const docs: boolean;
-const siteOrigin = docs ? location.origin + '/tiny-files/#' : location.origin
+const redirect = docs ? location.origin + '/tiny-files/' : location.origin + '/login'
 
 class TinyApi {
 
@@ -22,7 +22,7 @@ class TinyApi {
 
       location.href = dataBus.homeUrl + '/auth/handshake/start'
         + '?app=tiny-files'
-        + '&redirect=' + siteOrigin + '/login'
+        + '&redirect=' + redirect
         + '&scopes=home,store,db'
         + (personal ? `&fileScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]` : '&fileScopes=["/"]')
         + (username ? '&username=' + username : '');
@@ -35,7 +35,7 @@ class TinyApi {
         db: { type: 'tiny', url: string, token: string }
       }>(origin + '/auth/token', {
         app: 'tiny-files',
-        redirect: siteOrigin + '/login',
+        redirect: redirect,
         scopes: 'home,store,db',
         code,
         secret: 'keyboardcat'
