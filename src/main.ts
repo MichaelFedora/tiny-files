@@ -36,11 +36,13 @@ Vue.use(Upload);
 
 declare const docs: boolean;
 if(docs) {
-  const [_, path, query, hash] = location.href.match(/^(.+?)(\?.+?)(#.+)?$/);
-  if(!hash)
-    location.href = path + '#' + query;
-  else
-    location.href = path + hash + (!hash.includes('?') ? query : '&' + query.slice(1));
+  const [_, path, query, hash] = location.href.match(/^([^#?]+)([^#]+)?(#.+)?$/);
+  if(query) {
+    if(!hash)
+      location.href = path + '#' + query;
+    else
+      location.href = path + hash + (!hash.includes('?') ? query : '&' + query.slice(1));
+  }
 }
 
 const v = new Vue({
