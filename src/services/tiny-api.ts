@@ -48,8 +48,9 @@ class TinyApi {
     },
 
     async refresh(): Promise<void> {
-      await Promise.all(dataBus.infoArray.map(({ id, url, token }) => axios.get(`${url}/auth/refresh?sid=${token}`)
-        .then(res => dataBus[id + 'Token'] = String(res.data), handleError)));
+      await Promise.all(dataBus.uniqueBuckets
+        .map(({ ids, url, token }) => axios.get(`${url}/auth/refresh?sid=${token}`)
+        .then(res => ids.forEach(id => dataBus[id + 'Token'] = String(res.data), handleError))));
     },
 
     async getStoreUser(): Promise<{ id: string, username: string }> {
@@ -58,8 +59,8 @@ class TinyApi {
     },
 
     async logout(): Promise<void> {
-      await Promise.all(dataBus.infoArray.map(({ url, token }) => axios.post(`${url}/auth/logout?sid=${token}`)))
-        .catch(handleError);
+      await Promise.all(dataBus.uniqueBuckets.map(({ url, token }) => axios.post(`${url}/auth/logout?sid=${token}`)))
+        .catch(handleError); // handle all errors at once
       dataBus.clear();
     },
   });
@@ -67,8 +68,8 @@ class TinyApi {
   public get auth() { return this._auth; }
 
   async deleteSelf(): Promise<void> {
-    await Promise.all(dataBus.infoArray.map(({ url, token }) => axios.delete(`${url}/self?sid=${token}`)
-      .catch(handleError)));
+    await Promise.all(dataBus.uniqueBuckets.map(({ url, token }) => axios.delete(`${url}/self?sid=${token}`)
+      .catch(handleError))); // handle each error
     dataBus.clear();
   }
 

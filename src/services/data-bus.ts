@@ -30,6 +30,16 @@ class DataBus {
     { id: 'db', url: this.dbUrl, token: this.dbToken }
   ]; }
 
+  get uniqueBuckets(): { ids: string[], url: string, token: string }[] {
+    return this.infoArray
+      .reduce((acc, c) => {
+        const a = acc.find(a => a.url === c.url && a.token === c.token);
+        if(a) a.ids.push(c.id);
+        else acc.push({ ids: [c.id], url: c.url, token: c.token });
+        return acc;
+      }, [] as { ids: string[], url: string, token: string }[]);
+  }
+
   public clear() {
     localStorage.clear();
   }

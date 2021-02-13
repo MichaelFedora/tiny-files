@@ -63,52 +63,57 @@ export default Vue.component('tiny-browse', {
       if(this.working) return;
       this.working = true;
 
-      const listFilesLoop = async (scope: string) => {
-        const ret: FileListAdvance['entries'] = { };
-        let page = undefined;
-        do {
-          const res = await tinyApi.files.listFiles(scope, true, page);
-          if(scope === '/')
-            scope = '';
-          for(const e in res.entries)
-            ret[scope + e] = res.entries[e];
-          page = res.page || undefined;
-        } while(page);
-        return ret;
-      }
-      const entries = await Promise.all(dataBus.storeScopes.map(listFilesLoop))
-        .then(res => res.reduce((acc, c) => Object.assign(acc, c)));
-      this.rawPaths = Object.keys(entries);
+      try {
+        const listFilesLoop = async (scope: string) => {
+          const ret: FileListAdvance['entries'] = { };
+          let page = undefined;
+          do {
+            const res = await tinyApi.files.listFiles(scope, true, page);
+            if(scope === '/')
+              scope = '';
+            for(const e in res.entries)
+              ret[scope + e] = res.entries[e];
+            page = res.page || undefined;
+          } while(page);
+          return ret;
+        }
+        const entries = await Promise.all(dataBus.storeScopes.map(listFilesLoop))
+          .then(res => res.reduce((acc, c) => Object.assign(acc, c)));
+        this.rawPaths = Object.keys(entries);
 
-      let pathData = [] as PathedFileInfo[];
+        let pathData = [] as PathedFileInfo[];
 
-      for(const path of this.rawPaths)
-        pathData.push(Object.assign({ }, entries[path], { path }));
+        for(const path of this.rawPaths)
+          pathData.push(Object.assign({ }, entries[path], { path }));
 
-      if(this.familiarLayout && this.personal) {
-        const privateScope = dataBus.privateScope, publicScope = dataBus.publicScope;
-        pathData = pathData.filter(a => !a.path.startsWith(privateScope + '/public') && !a.path.startsWith(publicScope + '/shares'));
-        for(const entry of pathData) {
-          if(entry.path.startsWith(privateScope))
-            entry.path = entry.path.slice(privateScope.length);
-          else if(entry.path.startsWith(publicScope))
-            entry.path = '/public' + entry.path.slice(publicScope.length);
+        if(this.familiarLayout && this.personal) {
+          const privateScope = dataBus.privateScope, publicScope = dataBus.publicScope;
+          pathData = pathData.filter(a => !a.path.startsWith(privateScope + '/public') && !a.path.startsWith(publicScope + '/shares'));
+          for(const entry of pathData) {
+            if(entry.path.startsWith(privateScope))
+              entry.path = entry.path.slice(privateScope.length);
+            else if(entry.path.startsWith(publicScope))
+              entry.path = '/public' + entry.path.slice(publicScope.length);
+          }
+
+          if(!this.rawPaths.find(a => a.startsWith(publicScope)))
+            pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
+
+        } else if(dataBus.storeScopes.includes('/')) {
+          if(!this.rawPaths.find(a => a.startsWith('/public')))
+            pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
+
+        } else {
+          for(const scope of dataBus.storeScopes)
+            if(!this.rawPaths.find(a => a.startsWith(scope)))
+              pathData.push({ path: scope === '/' ? '/null' : scope + '/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
         }
 
-        if(!this.rawPaths.find(a => a.startsWith(publicScope)))
-          pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
+        this.paths = pathData;
+      } catch(e) {
 
-      } else if(dataBus.storeScopes.includes('/')) {
-        if(!this.rawPaths.find(a => a.startsWith('/public')))
-          pathData.push({ path: '/public/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
-
-      } else {
-        for(const scope of dataBus.storeScopes)
-          if(!this.rawPaths.find(a => a.startsWith(scope)))
-            pathData.push({ path: scope === '/' ? '/null' : scope + '/null', name: 'Nothing here...', type: 'none', size: 0, modified: 0 });
+        console.error('error refreshing');
       }
-
-      this.paths = pathData;
 
       this.working = false;
     },
