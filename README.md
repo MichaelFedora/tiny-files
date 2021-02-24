@@ -21,6 +21,9 @@ Try it out here: https://michaelfedora.github.io/tiny-files/#
 **necessary:**
 
 - manging share-codes
+- migrate to db for sharing
+  - store files/folder roots that are being shared so the index can be updated as files are being
+  moved (i.e. on refresh)
 
 **wishlist:**
 
