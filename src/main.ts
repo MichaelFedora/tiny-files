@@ -59,7 +59,7 @@ const v = new Vue({
 
 (async () => {
   // hmmm
-  if(dataBus.storeToken)
+  if(dataBus.storeSession)
     dataBus.storeUser = await tinyApi.auth.getStoreUser();
 
 })().then(() => {

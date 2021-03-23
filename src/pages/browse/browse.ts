@@ -201,9 +201,9 @@ export default Vue.component('tiny-browse', {
 
         const mapped = this.mapPath(path);
         path = this.rawPaths.filter(a => a.startsWith(mapped))
-      }
+      } else
+        path = this.mapPaths(path.filter(a => a.startsWith('/public')));
 
-      path = this.mapPaths(path.filter(a => a.startsWith('/public')));
       if(!path.length) return;
       if(path.length > 1) {
         const shareJson = { entries: path };
@@ -217,7 +217,7 @@ export default Vue.component('tiny-browse', {
 
         link = location.origin + (this.$router.mode === 'hash' ? '#' : '') + '/explore?store=' + dataBus.storeUrl + '&user=' + dataBus.storeUser.username + '&share=' + uuid;
       } else
-        link = tinyApi.files.getPublicReadUrl('asdf', path[0].slice('/public'.length));
+        link = tinyApi.files.getPublicReadUrl(dataBus.storeUser?.username || '???', path[0].slice('/public'.length));
 
       DialogProgrammatic.prompt({
         title: 'share item(s)',

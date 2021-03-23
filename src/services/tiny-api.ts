@@ -25,15 +25,16 @@ class TinyApi {
         + '&redirect=' + redirect
         + '&scopes=home,store,db'
         + (personal ? `&fileScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]` : '&fileScopes=["/"]')
+        + `&dbScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]`
         + (username ? '&username=' + username : '');
     },
 
-    async getTokens(origin: string, code: string): Promise<void> {
-      const tokens = await axios.post<{
-        home: { url: string, token: string },
-        store: { type: 'tiny', url: string, token: string },
-        db: { type: 'tiny', url: string, token: string }
-      }>(origin + '/auth/token', {
+    async getSessions(origin: string, code: string): Promise<void> {
+      const sessions = await axios.post<{
+        home: { url: string, session: string },
+        store: { type: 'tiny', url: string, session: string },
+        db: { type: 'tiny', url: string, session: string }
+      }>(origin + '/auth/session', {
         app: 'tiny-files',
         redirect: redirect,
         scopes: 'home,store,db',
@@ -41,25 +42,25 @@ class TinyApi {
         secret: 'keyboardcat'
       }).then(res => res.data, e => { handleError(e); throw e; });
 
-      for(const id of Object.keys(tokens)) {
-        dataBus[id + 'Url'] = tokens[id].url;
-        dataBus[id + 'Token'] = tokens[id].token;
+      for(const id of Object.keys(sessions)) {
+        dataBus[id + 'Url'] = sessions[id].url;
+        dataBus[id + 'Session'] = sessions[id].session;
       }
     },
 
     async refresh(): Promise<void> {
       await Promise.all(dataBus.uniqueBuckets
-        .map(({ ids, url, token }) => axios.get(`${url}/auth/refresh?sid=${token}`)
-        .then(res => ids.forEach(id => dataBus[id + 'Token'] = String(res.data), handleError))));
+        .map(({ ids, url, session }) => axios.get(`${url}/auth/refresh?sid=${session}`)
+        .then(res => ids.forEach(id => dataBus[id + 'Session'] = String(res.data), handleError))));
     },
 
     async getStoreUser(): Promise<{ id: string, username: string }> {
-      return axios.get(dataBus.storeUrl + '/self?sid=' + dataBus.storeToken)
+      return axios.get(dataBus.storeUrl + '/self?sid=' + dataBus.storeSession)
         .then(res => res.data, handleError);
     },
 
     async logout(): Promise<void> {
-      await Promise.all(dataBus.uniqueBuckets.map(({ url, token }) => axios.post(`${url}/auth/logout?sid=${token}`)))
+      await Promise.all(dataBus.uniqueBuckets.map(({ url, session }) => axios.post(`${url}/auth/logout?sid=${session}`)))
         .catch(handleError); // handle all errors at once
       dataBus.clear();
     },
@@ -68,7 +69,7 @@ class TinyApi {
   public get auth() { return this._auth; }
 
   async deleteSelf(): Promise<void> {
-    await Promise.all(dataBus.uniqueBuckets.map(({ url, token }) => axios.delete(`${url}/self?sid=${token}`)
+    await Promise.all(dataBus.uniqueBuckets.map(({ url, session }) => axios.delete(`${url}/self?sid=${session}`)
       .catch(handleError))); // handle each error
     dataBus.clear();
   }
@@ -81,7 +82,7 @@ class TinyApi {
      * @param {string} responseType (optional) the response type for axios to cast into
      */
     async read(path: string, responseType?: 'blob' | 'text' | 'json'): Promise<any> {
-      return axios.get(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeToken, { responseType })
+      return axios.get(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeSession, { responseType })
         .then(res => res.data)
         .catch(e => { handleError(e); throw e; });
     },
@@ -91,7 +92,7 @@ class TinyApi {
      * @param {string} path the file path to read
      */
     getReadUrl(path: string): string {
-      return dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeToken;
+      return dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeSession;
     },
 
     /**
@@ -100,7 +101,7 @@ class TinyApi {
      * @param {ArrayBuffer } data the data to write
      */
     async write(path: string, data: ArrayBuffer, contentType?: string, onUploadProgress: (event: { loaded: number, total: number }) => void = () => null): Promise<any> {
-      await axios.put(`${dataBus.storeUrl}/files${path}?sid=${dataBus.storeToken}${contentType ? '&contentType=' + contentType : ''}`,
+      await axios.put(`${dataBus.storeUrl}/files${path}?sid=${dataBus.storeSession}${contentType ? '&contentType=' + contentType : ''}`,
         data,
         { headers: contentType ? { 'Content-Type': contentType } : undefined, onUploadProgress })
         .catch(e => { handleError(e); throw e; });
@@ -115,7 +116,7 @@ class TinyApi {
       const formData = new FormData();
       formData.append('file', file);
 
-      await axios.put(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeToken, formData, { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress })
+      await axios.put(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeSession, formData, { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress })
         .catch(e => { handleError(e); throw e; });
     },
 
@@ -125,20 +126,20 @@ class TinyApi {
      * @param {string} path the file path
      */
     async delete(path: string): Promise<void> {
-      await axios.delete(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeToken)
+      await axios.delete(dataBus.storeUrl + '/files' + path + '?sid=' + dataBus.storeSession)
         .catch(e => { handleError(e); throw e; });
     },
 
     async listFiles<T extends boolean = false>(path: string, advance?: T, page?: number): Promise<T extends false ? FileList : FileListAdvance> {
       return axios.get(`${dataBus.storeUrl}/list-files${path.length > 0 && !path.startsWith('/') ? '/' : ''}${path}`
-        + `?sid=${dataBus.storeToken}${advance ? '&advance=true' : ''}`
+        + `?sid=${dataBus.storeSession}${advance ? '&advance=true' : ''}`
         + (page ? '&page=' + page : ''))
         .then(res => res.data)
         .catch(e => { handleError(e); throw e; });
     },
 
     async getStorageStats(): Promise<{ used: number, available: number, max: number }> {
-      return axios.get(dataBus.storeUrl + '/storage-stats' + '?sid=' + dataBus.storeToken)
+      return axios.get(dataBus.storeUrl + '/storage-stats' + '?sid=' + dataBus.storeSession)
         .then(res => res.data)
         .catch(e => { handleError(e); throw e; });
     },

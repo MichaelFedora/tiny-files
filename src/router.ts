@@ -44,7 +44,7 @@ router.beforeEach((to, from, next) => {
     } else document.title = 'tiny files';
   }
 
-  if(!dataBus.homeToken && !/^\/(login|explore)/.test(to.path))
+  if(!dataBus.homeSession && !/^\/(login|explore)/.test(to.path))
     next({ path: '/login', query: Object.assign({ goto: to.path }, to.query) });
 
   next();
