@@ -235,7 +235,8 @@
     <div id='explorer-preview' ref='exppreview' class='is-hidden-touch' v-if='showPreview'>
       <div>
         <template v-if='activeFile'>
-          <figure v-if='/image\//.test(activeFile.contentType) || /(?:jpg|jpeg|png)$/i.test(activeFile.path)'><img :src='getLink(activeFile.path)'></figure>
+          <span v-if='activeFile.rawSize > 20000000'>File too large to preview (> 20MB).</span>
+          <figure v-else-if='/image\//.test(activeFile.contentType) || /(?:jpg|jpeg|png)$/i.test(activeFile.path)'><img :src='getLink(activeFile.path)'></figure>
           <pre v-else-if='/text\//.test(activeFile.contentType) || /(?:txt|json|yaml|ini|md)$/i.test(activeFile.path)'><b-loading :is-full-page='false' :active='activeFileContents === "..."' />{{ autoActiveFileContents }}</pre>
           <span v-else>File not supported for previewing.</span>
         </template>
