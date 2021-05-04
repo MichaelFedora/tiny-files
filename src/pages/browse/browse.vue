@@ -40,6 +40,8 @@
 <style lang='scss'>
 div#tiny-browse {
   height: 100vh;
+  width: 100vw;
+
   display: flex;
   flex-flow: column;
 

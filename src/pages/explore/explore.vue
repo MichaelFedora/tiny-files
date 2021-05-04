@@ -19,6 +19,8 @@
 <style lang='scss'>
 div#tiny-explore {
   height: 100vh;
+  width: 100vw;
+
   display: flex;
   flex-flow: column;
 

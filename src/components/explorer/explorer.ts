@@ -53,6 +53,11 @@ export default Vue.component('tiny-explorer', {
       index: { } as { [path: string]: { files: EntryInfo[]; folders: EntryInfo[] } },
       rootInfo,
 
+      activeFile: null as EntryInfo,
+      activeFileContents: '',
+      showPreview: true,
+      listHeaderScrollPadding: 0,
+
       // downloading/uploading
       working: false,
       progress: 0,
@@ -116,6 +121,13 @@ export default Vue.component('tiny-explorer', {
       if(!this.index || !this.index[this.dir])
         return [];
       return this.sortEntries(this.index[this.dir].files);
+    },
+
+    autoActiveFileContents(): string {
+      if(!this.activeFileContents)
+        this.getActiveFileContents();
+
+      return this.activeFileContents;
     }
   },
   watch: {
@@ -136,6 +148,7 @@ export default Vue.component('tiny-explorer', {
       } else
         this.dirInfo = this.rootInfo;
 
+      this.$nextTick(() => this.updateListHeaderPadding());
       this.$emit('update:dir', this.dir);
     },
     paths() {
@@ -147,11 +160,14 @@ export default Vue.component('tiny-explorer', {
     },
     active() {
       this.anyActive = this.active && Object.values(this.active).reduce((a, b) => a || b, false);
+    },
+    activeFile() {
+      this.activeFileContents = '';
     }
   },
   async mounted() {
     window.addEventListener('mousedown', this.closeContextMenu);
-    window.addEventListener('resize', this.closeContextMenu);
+    window.addEventListener('resize', this.onWindowResize);
     window.addEventListener('mouseup', this.drawEnd);
     window.addEventListener('mousemove', this.drawContinue);
     window.addEventListener('keydown', this.shortcutHandler);
@@ -165,7 +181,7 @@ export default Vue.component('tiny-explorer', {
   },
   destroyed() {
     window.removeEventListener('mousedown', this.closeContextMenu);
-    window.removeEventListener('resize', this.closeContextMenu);
+    window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('mouseup', this.drawEnd);
     window.removeEventListener('mousemove', this.drawContinue);
     window.removeEventListener('keydown', this.shortcutHandler);
@@ -394,6 +410,7 @@ export default Vue.component('tiny-explorer', {
       }
       this.index = index;
       this.$forceUpdate();
+      this.$nextTick(() => this.updateListHeaderPadding());
     },
     clickItem(event: MouseEvent, item: EntryInfo, folder = false) {
       const name = folder ? '/' + item.name : item.name;
@@ -428,6 +445,14 @@ export default Vue.component('tiny-explorer', {
       }
 
       this.lastActive = name;
+      if(!folder)
+        this.activeFile = item;
+    },
+    copyLink() {
+      if(!this.contextItem)
+        return;
+
+      navigator.clipboard.writeText(this.getLink(this.contextItem.path))
     },
     getSelected(): { items: string[], paths: string[] } {
       const items: string[] = [];
@@ -636,7 +661,7 @@ export default Vue.component('tiny-explorer', {
       Vue.set(this.drawPos, 'height', this.drawPoints.y2 - this.drawPoints.y1 + 'px');
       Vue.set(this.drawPos, 'width', this.drawPoints.x2 - this.drawPoints.x1 + 'px');
 
-      const children = (this.$refs.explorer as HTMLElement).children;
+      const children = (this.$refs.list as HTMLElement).children;
 
       for(let i = 0, child = children.item(i); i < children.length; i++, child = children.item(i)) {
         if(!(child.classList.contains('folder') || child.classList.contains('file')))
@@ -661,7 +686,7 @@ export default Vue.component('tiny-explorer', {
         return;
 
       this.drawing = false;
-      const children = (this.$refs.explorer as HTMLElement).children;
+      const children = (this.$refs.list as HTMLElement).children;
 
       const newActive = [];
       for(let i = 0, child = children.item(i); i < children.length; i++, child = children.item(i)) {
@@ -676,8 +701,12 @@ export default Vue.component('tiny-explorer', {
         }
       }
 
-      if(!(event.getModifierState('State') || event.shiftKey))
+      if(!(event.getModifierState('State') || event.shiftKey)) {
         this.active = { };
+
+        if(!newActive.length)
+          this.activeFile = null;
+      }
       for(const i of newActive)
         Vue.set(this.active, i, true);
     },
@@ -694,6 +723,7 @@ export default Vue.component('tiny-explorer', {
       }
       this.lastActive = file.name;
       this.lastActiveTime = Date.now();
+      this.activeFile = file;
 
       event.dataTransfer.effectAllowed = 'move';
       // (event.target as HTMLElement).style.cursor = 'move';
@@ -713,6 +743,7 @@ export default Vue.component('tiny-explorer', {
       }
       this.lastActive = '/' + folder.name;
       this.lastActiveTime = Date.now();
+      this.activeFile = null;
 
       // (event.target as HTMLElement).style.cursor = 'move';
       (event.target as HTMLElement).style.opacity = '0.5';
@@ -766,6 +797,7 @@ export default Vue.component('tiny-explorer', {
       if(type && item) {
         this.lastActiveTime = Date.now();
         this.lastActive = (type === 'folder' ? '/' : '') + item.name;
+        this.activeFile = type === 'folder' ? null : item;
         if(!this.active[this.lastActive])
           for(const name in this.active) this.$set(this.active, name, false);
         this.$set(this.active, this.lastActive, true);
@@ -784,16 +816,30 @@ export default Vue.component('tiny-explorer', {
 
       this.$nextTick(() => {
         if(event.clientX + elem.offsetWidth > window.innerWidth) {
-          elem.style.right = (window.innerWidth - event.clientX) + 'px';
-          elem.style.left = '';
+          const offset = window.innerWidth - event.clientX;
+
+          if(offset + elem.offsetWidth > window.innerWidth) {
+            elem.style.right = '0';
+            elem.style.left = '';
+          } else {
+            elem.style.right = offset + 'px';
+            elem.style.left = '';
+          }
         } else {
           elem.style.left = event.clientX + 'px';
           elem.style.right = '';
         }
 
         if(event.clientY + elem.offsetHeight > window.innerHeight) {
-          elem.style.bottom = (window.innerHeight - event.clientY) + 'px';
-          elem.style.top = '';
+          const offset = window.innerHeight - event.clientY;
+
+          if(offset + elem.offsetHeight > window.innerHeight) {
+            elem.style.bottom = '0';
+            elem.style.top = '';
+          } else {
+            elem.style.bottom = offset + 'px';
+            elem.style.top = '';
+          }
         } else {
           elem.style.top = event.clientY + 'px';
           elem.style.bottom = '';
@@ -807,6 +853,11 @@ export default Vue.component('tiny-explorer', {
     shortcutHandler(event: KeyboardEvent) {
       if(document.querySelector('div.modal.is-active'))
         return;
+
+      if(/^esc/i.test(event.key) && this.showContextMenu) {
+        this.closeContextMenu();
+        return;
+      }
 
       if(event.ctrlKey) {
         if(event.key === 'a') {
@@ -853,6 +904,38 @@ export default Vue.component('tiny-explorer', {
     },
     getLink(file: string): string {
       return this.mapLink(file);
+    },
+    updateListHeaderPadding() {
+      const listcontainer = this.$refs['listcontainer'] as HTMLDivElement;
+      if(!listcontainer)
+        return;
+
+      const scrollbarWidth = listcontainer.offsetWidth - listcontainer.clientWidth;
+      if(scrollbarWidth !== this.listHeaderScrollPadding)
+        this.listHeaderScrollPadding = scrollbarWidth;
+    },
+    onWindowResize: _.throttle(function(this) {
+      this.closeContextMenu();
+      this.updateListHeaderPadding();
+      if(this.showPreview) {
+        const exppreview = (this.$refs['exppreview'] as HTMLDivElement);
+
+        if(exppreview && !exppreview.clientWidth && !exppreview.clientHeight)
+          this.showPreview = false;
+      }
+    }, 15, { trailing: true }),
+    async getActiveFileContents() {
+      if(!this.activeFile || this.activeFileContents)
+        return;
+
+      let content = '...';
+      try {
+        content = await axios.get(this.mapLink(this.activeFile.path)).then(res => res.data);
+      } catch(e) {
+        console.error(e);
+        content = 'Error getting file contents.'
+      }
+      this.activeFileContents = content;
     }
   }
 });
