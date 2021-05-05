@@ -54,6 +54,7 @@ export default Vue.component('tiny-explorer', {
       rootInfo,
 
       activeFile: null as EntryInfo,
+      loadingFileContents: false,
       activeFileContents: '',
       showPreview: true,
       listHeaderScrollPadding: 0,
@@ -124,7 +125,7 @@ export default Vue.component('tiny-explorer', {
     },
 
     autoActiveFileContents(): string {
-      if(!this.activeFileContents)
+      if(!this.loadingFileContents && this.activeFileContents == undefined)
         this.getActiveFileContents();
 
       return this.activeFileContents;
@@ -135,6 +136,7 @@ export default Vue.component('tiny-explorer', {
       this.active = { };
       this.lastActive = '';
       this.lastActiveTime = 0;
+      this.activeFile = null;
 
       if(this.sliceRouteForDir() !== this.dir)
         this.$router.replace({ path: this.rootRoute + this.dir, query: this.$route.query });
@@ -162,7 +164,7 @@ export default Vue.component('tiny-explorer', {
       this.anyActive = this.active && Object.values(this.active).reduce((a, b) => a || b, false);
     },
     activeFile() {
-      this.activeFileContents = '';
+      this.activeFileContents = undefined;
     }
   },
   async mounted() {
@@ -447,6 +449,8 @@ export default Vue.component('tiny-explorer', {
       this.lastActive = name;
       if(!folder)
         this.activeFile = item;
+      else
+        this.activeFile = null;
     },
     copyLink() {
       if(!this.contextItem)
@@ -859,6 +863,76 @@ export default Vue.component('tiny-explorer', {
         return;
       }
 
+      if(/^arrow/i.test(event.key)) {
+        const allItems = this.index[this.dir].folders.map(a => '/' + a.name).concat(this.index[this.dir].files.map(a => a.name));
+        let index = this.lastActive && allItems.indexOf(this.lastActive);
+        if(!index && index !== 0)
+          index = -1;
+
+        if(/^arrow(?:down|right)$/i.test(event.key)) {
+          if(index >= 0 && allItems.length <= index + 1)
+            return;
+
+          if(event.shiftKey) {
+            if(index >= 0) {
+              if(this.active[allItems[index + 1]])
+                this.$set(this.active, allItems[index], false);
+              else
+                this.$set(this.active, allItems[index + 1], true);
+
+              this.lastActive = allItems[index + 1];
+            } else {
+              this.lastActive = allItems[0];
+              this.$set(this.active, allItems[0], true);
+            }
+          } else {
+            if(index >= 0)
+              this.lastActive = allItems[index + 1];
+            else
+              this.lastActive = allItems[0];
+
+            this.active = { [ this.lastActive]: true };
+          }
+        } else if(/^arrow(?:up|left)$/i.test(event.key)) {
+          if(index === 0)
+            return;
+
+          if(event.shiftKey) {
+            if(index >= 0) {
+              if(this.active[allItems[index - 1]])
+                this.$set(this.active, allItems[index], false);
+              else
+                this.$set(this.active, allItems[index - 1], true);
+
+              this.lastActive = allItems[index - 1];
+            } else {
+              this.lastActive = allItems[allItems.length - 1];
+              this.$set(this.active, allItems[this.lastActive], true);
+            }
+          } else {
+            if(index >= 0)
+              this.lastActive = allItems[index - 1];
+            else
+              this.lastActive = allItems[allItems.length - 1];
+
+            this.active = { [ this.lastActive]: true };
+          }
+        } else {
+          console.warn('Unknown shortcut arrow type:', event.key, '!');
+          return;
+        }
+
+        this.lastActiveTime = Date.now();
+        const neuIndex = allItems.indexOf(this.lastActive);
+        if(neuIndex >= this.index[this.dir].folders.length)
+          this.activeFile = this.index[this.dir].files[neuIndex - this.index[this.dir].folders.length]
+        else if(this.activeFile)
+          this.activeFile = null;
+
+        event.stopPropagation();
+        return;
+      }
+
       if(event.ctrlKey) {
         if(event.key === 'a') {
           event.preventDefault();
@@ -925,16 +999,19 @@ export default Vue.component('tiny-explorer', {
       }
     }, 15, { trailing: true }),
     async getActiveFileContents() {
-      if(!this.activeFile || this.activeFileContents)
+      if(!this.activeFile || this.loadingFileContents || this.activeFileContents)
         return;
+      this.loadingFileContents = true;
 
-      let content = '...';
+      let content = '';
       try {
         content = await axios.get(this.mapLink(this.activeFile.path)).then(res => res.data);
       } catch(e) {
         console.error(e);
         content = 'Error getting file contents.'
       }
+
+      this.loadingFileContents = false;
       this.activeFileContents = content;
     }
   }
