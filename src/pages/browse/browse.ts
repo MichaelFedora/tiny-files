@@ -1,11 +1,13 @@
+import Vue from 'vue';
 import { DialogProgrammatic, ModalProgrammatic } from 'buefy';
 import { debounce, DebouncedFunc } from 'lodash';
-import dataBus from 'services/data-bus';
-import tinyApi from 'services/tiny-api';
-import { FileListAdvance, PathedFileInfo } from 'types';
-import Vue from 'vue';
 
-import UploadModal from 'components/upload/upload';
+import { FileListAdvance, PathedFileInfo } from '@/types';
+import dataBus from '@/services/data-bus';
+import tinyApi from '@/services/tiny-api';
+
+import ShareModal from '@/components/share.vue';
+import UploadModal from '@/components/upload/upload';
 import { v4 } from 'uuid';
 
 export default Vue.component('tiny-browse', {
@@ -192,6 +194,11 @@ export default Vue.component('tiny-browse', {
     async share(path: string | string[]) {
       if(this.working) return;
       this.working = true;
+
+      // if one file, just use link
+      // create/update a share?
+      //  - prompt for name, autocomplete for update
+      //  - if empty create w/ auto uuid
 
       let link = '';
 

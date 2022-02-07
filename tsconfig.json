@@ -1,20 +1,19 @@
 {
-  "compileOnSave": false,
   "compilerOptions": {
-    "outDir": "./stage",
-    "baseUrl": "src",
-    "module": "es2020",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "module": "esnext",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "target": "es2019",
+    "target": "esnext",
     "strict": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
+    "sourceMap": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
-    "lib": [
-      "esnext",
-      "dom"
-    ]
+    "lib": [ "esnext", "dom" ]
   },
   "include": [
     "src/**/*.ts",

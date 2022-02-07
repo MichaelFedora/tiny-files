@@ -7,7 +7,7 @@ import filesize from 'filesize';
 import { DateTime } from 'luxon';
 import axios from 'axios';
 
-import { PathedFileInfo } from 'types';
+import { PathedFileInfo } from '@/types';
 import { getFileIcon } from '../../util';
 import { DialogProgrammatic, ToastProgrammatic } from 'buefy';
 

@@ -400,7 +400,10 @@
 
         > figure > img { max-height: 100%; }
 
-        > pre { height: max-content; }
+        > pre {
+          height: max-content;
+          max-height: 100%;
+        }
 
         > span {
           text-align: center;

@@ -13,15 +13,16 @@ import './styles.scss';
 
 import { makeInitializerComponent } from './util';
 
-import AppComponent from './app/app';
-import LoadingComponent from './components/loading/loading';
+
+import AppComponent from './app.vue';
+import LoadingComponent from './components/loading.vue';
 import TinyExplorer from './components/explorer/explorer';
 
 import router from './router';
-import dataBus from 'services/data-bus';
-import tinyApi from 'services/tiny-api';
+import dataBus from '@/services/data-bus';
+import tinyApi from '@/services/tiny-api';
 
-console.log('Environment:', process.env.NODE_ENV);
+console.log('Environment:', import.meta.env.MODE);
 
 Vue.use(Button);
 Vue.use(Input);
@@ -34,8 +35,7 @@ Vue.use(Toast);
 Vue.use(Dropdown);
 Vue.use(Upload);
 
-declare const docs: boolean;
-if(docs) {
+if(import.meta.env.VITE_DOCS) {
   const [_, path, query, hash] = location.href.match(/^([^#?]+)([^#]+)?(#.+)?$/);
   if(query) {
     if(!hash)

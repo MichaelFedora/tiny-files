@@ -1,9 +1,9 @@
-import tinyApi from 'services/tiny-api';
+import tinyApi from '@/services/tiny-api';
 import { getFileIcon } from '../../util';
 import Vue from 'vue';
 import { PropValidator } from 'vue/types/options';
 import { debounce, DebouncedFunc } from 'lodash';
-import dataBus from 'services/data-bus';
+import dataBus from '@/services/data-bus';
 
 export default Vue.component('tiny-upload', {
   props: {

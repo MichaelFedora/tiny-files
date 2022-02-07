@@ -1,26 +1,22 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 
-const HomePage = () => import('./pages/home/home');
 const BrowsePage = () => import('./pages/browse/browse');
 const ExplorePage = () => import('./pages/explore/explore');
-const SettingsPage = () => import('./pages/settings/settings');
-const LoginPage = () => import('./pages/login/login');
-import NotFoundPage from './pages/not-found/not-found';
+const LoginPage = () => import('./pages/login.vue');
+
+import NotFoundPage from './pages/not-found.vue';
 import dataBus from './services/data-bus';
 
 
 Vue.use(VueRouter);
 
-declare const docs: boolean;
-
 const router = new VueRouter({
-  mode: docs ? 'hash' : 'history',
+  mode: import.meta.env.VITE_DOCS ? 'hash' : 'history',
   routes: [
-    { path: '/', redirect: '/browse', name: 'home' }, // no idea
+    { path: '/', redirect: '/browse' },
     { path: '/browse**', component: BrowsePage, name: 'browse' }, // own files
     { path: '/explore**', component: ExplorePage, name: 'explore' }, // other's files
-    { path: '/settings', component: SettingsPage, name: 'settings' }, // public pages, sharing, customizing file/db conns, etc
     { path: '/login', component: LoginPage, name: 'login' }, // loggin in (obv)
     { path: '**', component: NotFoundPage, name: 'not-found' }
   ]

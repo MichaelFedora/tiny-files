@@ -1,8 +1,8 @@
 import axios from 'axios';
-import dataBus from 'services/data-bus';
-import tinyApi from 'services/tiny-api';
-import { FileListAdvance, PathedFileInfo } from 'types';
-import { computeShortestPath, handleError } from '../../util';
+import dataBus from '@/services/data-bus';
+import tinyApi from '@/services/tiny-api';
+import { FileListAdvance, PathedFileInfo } from '@/types';
+import { computeShortestPath, handleError } from '@/util';
 import Vue from 'vue';
 
 export default Vue.component('tiny-explore', {
