@@ -22,14 +22,17 @@ function handleApiError(e: AxiosError) {
 
 class TinyApi {
 
+  static get storeScopes() { return [dataBus.privateScope, dataBus.publicScope]; }
+
   private _auth = Object.freeze({
-    async login(origin: string, personal = true): Promise<void> {
+    async loginFile(origin: string, personal = true): Promise<void> {
       const spleet = origin.split('@');
       let username = '';
       if(spleet[1]) {
         origin = spleet[1];
         username = spleet[0];
       }
+
       const protocol = /^localhost:/.test(origin) ? 'http:' : location.protocol;
       dataBus.homeUrl = protocol + '//' + origin;
       dataBus.storeScopes = personal ? [dataBus.privateScope, dataBus.publicScope] : ['/']
@@ -37,10 +40,45 @@ class TinyApi {
       location.href = dataBus.homeUrl + '/auth/handshake/start'
         + '?app=tiny-files'
         + '&redirect=' + redirect
-        + '&scopes=home,store,db'
-        + (personal ? `&fileScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]` : '&fileScopes=["/"]')
-        + `&dbScopes=["${dataBus.privateScope}", "${dataBus.publicScope}"]`
+        + (personal ? `&scopes=${JSON.stringify(TinyApi.storeScopes)}` : '&scopes=["/"]')
         + (username ? '&username=' + username : '');
+    },
+
+    async login(origin: string, personal = true): Promise<void> {
+      const spleet = origin.split('@');
+      let username = '';
+      if(spleet[1]) {
+        origin = spleet[1];
+        username = spleet[0];
+      }
+
+      const protocol = /^localhost:/.test(origin) ? 'http:' : location.protocol;
+      dataBus.homeUrl = protocol + '//' + origin;
+      dataBus.storeScopes = personal ? [dataBus.privateScope, dataBus.publicScope] : ['/']
+
+      const privateScopes = JSON.stringify([dataBus.privateScope, dataBus.publicScope]);
+
+      location.href = dataBus.homeUrl + '/auth/handshake/start'
+        + '?app=tiny-files'
+        + '&redirect=' + redirect
+        + '&scopes=home,store,db'
+        + `&fileScopes=${personal ? privateScopes : '["/"]'}`
+        + `&dbScopes=${privateScopes}`
+        + (username ? '&username=' + username : '');
+    },
+
+    async getFileSession(origin: string, code: string): Promise<void> {
+      const sessions = await axios.post<string>(origin + '/auth/handshake/complete', {
+        app: 'tiny-files',
+        redirect: redirect,
+        scopes: ['/'], // TinyApi.storeScopes, // 'home,store,db',
+        code,
+        secret: 'keyboardcat'
+      }).then(res => res.data, e => { handleApiError(e); throw e; });
+
+      dataBus['storeUrl'] = dataBus.homeUrl;
+      dataBus.homeSession = sessions;
+      dataBus.storeSession = sessions;
     },
 
     async getSessions(origin: string, code: string): Promise<void> {

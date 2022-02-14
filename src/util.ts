@@ -40,8 +40,8 @@ export async function handleError(e: Error, action?: string, wait?: boolean) {
 }
 
 
-export function getFileIcon(contentType: string): { fileIcon: string; fileIconColor: string } {
-  if(contentType === 'none')
+export function getFileIcon(contentType?: string): { fileIcon: string; fileIconColor: string } {
+  if(!contentType || contentType === 'none')
     return { fileIcon: 'file-question', fileIconColor: '#b5b5b5' };
   if(contentType.startsWith('application/json'))
     return { fileIcon: 'file-code', fileIconColor: '#f44336' };

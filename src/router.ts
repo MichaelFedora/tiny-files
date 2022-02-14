@@ -1,8 +1,8 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 
-const BrowsePage = () => import('./pages/browse/browse');
-const ExplorePage = () => import('./pages/explore/explore');
+const BrowsePage = () => import('./pages/browse/browse.vue');
+const ExplorePage = () => import('./pages/explore/explore.vue');
 const LoginPage = () => import('./pages/login.vue');
 
 import NotFoundPage from './pages/not-found.vue';

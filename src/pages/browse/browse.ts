@@ -7,7 +7,7 @@ import dataBus from '@/services/data-bus';
 import tinyApi from '@/services/tiny-api';
 
 import ShareModal from '@/components/share.vue';
-import UploadModal from '@/components/upload/upload';
+import UploadModal from '@/components/upload/upload.vue';
 import { v4 } from 'uuid';
 
 export default Vue.component('tiny-browse', {

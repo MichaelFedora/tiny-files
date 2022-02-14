@@ -35,7 +35,6 @@
   <b-loading :active='working' />
 </div>
 </template>
-
 <script src='./browse.ts'></script>
 <style lang='scss'>
 div#tiny-browse {

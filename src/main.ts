@@ -16,7 +16,7 @@ import { makeInitializerComponent } from './util';
 
 import AppComponent from './app.vue';
 import LoadingComponent from './components/loading.vue';
-import TinyExplorer from './components/explorer/explorer';
+import TinyExplorer from './components/explorer/explorer.vue';
 
 import router from './router';
 import dataBus from '@/services/data-bus';
